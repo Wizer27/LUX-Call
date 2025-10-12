@@ -59,6 +59,34 @@ public:
     }
 };
 
+class SignatureMiddleware{
+private:
+    SecurityManager& security;
+public:
+    bool validate_request(const Rest::Request& request){
+        auto signature = request.headers().tryGetRaw("X-Signature");
+        auto timestamp = request.headers().tryGetRaw("X-Timestamp");
+        auto apiKey = request.headers().tryGetRaw("X-API-Key");
+        if (!signature || !timestamp || !apiKey){
+            return false;
+        }
+
+        string req_sig = signature -> value();
+        string time_req = timestamp -> value();
+        string apiKey_req = apiKey -> value();
+
+
+        if (!security.isTimeValid(time_req)){
+            return false;
+        }
+        
+        const string data = request.body() + time_req + apiKey_req;
+
+        return security.verifySignature(data,time_req,req_sig);
+
+    }    
+};
+
 void get_main(const Rest::Request& request,Http::ResponseWriter response){
     response.send(Http::Code::Ok,"Lux-Call API");
 }

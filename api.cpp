@@ -87,17 +87,50 @@ public:
     }    
 };
 
+SignatureMiddleware siganture_middleware;
+
 void get_main(const Rest::Request& request,Http::ResponseWriter response){
     response.send(Http::Code::Ok,"Lux-Call API");
 }
-void create_chat(const Rest::Request& request,Http::ResponseWriter response){
+void register_new_user(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid siganture");
+        return;
+    }
+    json body = json::parse(request.body());
+    string username = body[0];
+    string hash_pasw = body[1];
+    try{
+        ifstream file("data/users.josn");
+        if(!file.is_open()){
+            response.send(Http::Code::Bad_Request,"Error file wanst opened");
+        }
+        else{
+            json data;
+            file >> data;
+            file.close();
+            data[username] = hash_pasw;
+            ofstream exit_file("data/users.json");
+            if(!exit_file.is_open()){
+                response.send(Http::Code::Bad_Request,"Error while writing data");
+            }
+            else{
+                exit_file << data.dump(4);
+                exit_file.close();
+                response.send(Http::Code::Ok,"Done");
+            }
 
+        }
+    }catch(exception& e){
+        response.send(Http::Code::Bad_Request,"Error");
+    }
 }
 
 int main(){
     Http::Endpoint server(Address("*:8080")); 
     Rest::Router router;
-    Routes::Post(router, "/api/data", Routes::bind(get_main));
+    Routes::Get(router, "/api/data", Routes::bind(get_main));
+    Routes::Post(router, "/api/register", Routes::bind(get_main));
     server.init();
     server.setHandler(router.handler());
     server.serve();

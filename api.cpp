@@ -92,6 +92,28 @@ SignatureMiddleware siganture_middleware;
 void get_main(const Rest::Request& request,Http::ResponseWriter response){
     response.send(Http::Code::Ok,"Lux-Call API");
 }
+void default_chats(string username){
+    ifstream file;
+    json data;
+    if(!file.is_open()){
+        cerr << "Error file wasnt opened" << endl;
+        return;
+    }
+    else{
+        file >> data;
+        file.close();
+        json new_user = {
+            {"username",username},
+            {"messages",json::array()}
+        };
+        ofstream exit_file("data/chats.json");
+        if(!exit_file.is_open()){
+            cerr << "Error while writing the data" << endl;
+            return;
+        }
+        
+    }
+}
 void register_new_user(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){
         response.send(Http::Code::Forbidden,"Invalid siganture");
@@ -125,6 +147,28 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
         response.send(Http::Code::Bad_Request,"Error");
     }
 }
+
+void Create_New_chat(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid siganture");
+        return;
+    try{
+        ifstream file("data/chats.json");
+        json data;
+        if(!file.is_open()){
+            response.send(Http::Code::Bad_Request,"Error");
+        }
+        else{
+            file >> data;
+            file.close();
+        }
+        json new_user;
+    }catch(exception& e){
+        response.send(Http::Code::Bad_Request,"Error");
+    }
+}
+
+
 
 int main(){
     Http::Endpoint server(Address("*:8080")); 

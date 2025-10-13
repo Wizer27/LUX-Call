@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <sstream>
 #include <fstream>
 #include <sstream>
 #include <nlohmann/json.hpp>
@@ -10,6 +9,10 @@
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 #include <iomanip>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 
 
 using namespace std;
@@ -17,6 +20,7 @@ using namespace Pistache;
 using namespace Pistache::Rest; 
 using json = nlohmann::json;
 
+boost::uuids::random_generator  id_genrator;
 
 
 class SecurityManager {
@@ -104,12 +108,16 @@ void default_chats(string username){
         file.close();
         json new_user = {
             {"username",username},
-            {"messages",json::array()}
+            {"chats",json::array()}
         };
         ofstream exit_file("data/chats.json");
         if(!exit_file.is_open()){
             cerr << "Error while writing the data" << endl;
             return;
+        }
+        else{
+            exit_file << data.dump(4);
+            exit_file.close();
         }
         
     }
@@ -122,6 +130,7 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
     json body = json::parse(request.body());
     string username = body[0];
     string hash_pasw = body[1];
+
     try{
         ifstream file("data/users.josn");
         if(!file.is_open()){
@@ -139,6 +148,7 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
             else{
                 exit_file << data.dump(4);
                 exit_file.close();
+                default_chats(username);
                 response.send(Http::Code::Ok,"Done");
             }
 
@@ -152,9 +162,14 @@ void Create_New_chat(const Rest::Request& request,Http::ResponseWriter response)
     if(!siganture_middleware.validate_request(request)){
         response.send(Http::Code::Forbidden,"Invalid siganture");
         return;
+    }    
     try{
         ifstream file("data/chats.json");
         json data;
+        json body = json::parse(request.body());
+        string user1 = body[0];//our user
+        string user2 = body[1]; // his contact
+        string id = boost::uuids::to_string(id_genrator());
         if(!file.is_open()){
             response.send(Http::Code::Bad_Request,"Error");
         }
@@ -162,7 +177,9 @@ void Create_New_chat(const Rest::Request& request,Http::ResponseWriter response)
             file >> data;
             file.close();
         }
-        json new_user;
+        
+
+        
     }catch(exception& e){
         response.send(Http::Code::Bad_Request,"Error");
     }
@@ -174,7 +191,7 @@ int main(){
     Http::Endpoint server(Address("*:8080")); 
     Rest::Router router;
     Routes::Get(router, "/api/data", Routes::bind(get_main));
-    Routes::Post(router, "/api/register", Routes::bind(get_main));
+    Routes::Post(router, "/api/register", Routes::bind(register_new_user));
     server.init();
     server.setHandler(router.handler());
     server.serve();

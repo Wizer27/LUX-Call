@@ -1,6 +1,56 @@
 [
     {
-        "username":"test",
-        "chats":[]
+        "chats": [],
+        "username": "test"
+    },
+    {
+        "id": "bf5ae5d5-933c-40aa-8d46-dc93356b8dbb",
+        "messages": [],
+        "users": []
+    },
+    {
+        "id": "692de4eb-c491-4f7a-91bc-9a9387476b5f",
+        "messages": [],
+        "users": []
+    },
+    {
+        "id": "9bbe693e-fcfd-4920-971c-df96f091ae26",
+        "messages": [],
+        "users": []
+    },
+    {
+        "id": "d3c8cf4f-1541-4c70-89f9-e920a1b9eeb6",
+        "messages": [],
+        "users": []
+    },
+    {
+        "id": "7e58e087-19c2-4d8c-9059-71179a55c679",
+        "messages": [],
+        "users": []
+    },
+    {
+        "id": "f79a8c3f-730e-4c0f-bc8b-ae0442211c48",
+        "messages": [],
+        "users": []
+    },
+    {
+        "id": "320f66fd-8810-43d5-8e97-0e989ff4bc18",
+        "messages": [],
+        "users": []
+    },
+    {
+        "id": "5e8c448e-ace9-483b-84c2-dd86397d2f22",
+        "messages": [],
+        "users": []
+    },
+    {
+        "id": "f46b8305-24f1-4859-bbc1-7c1f5e25f6b9",
+        "messages": [],
+        "users": []
+    },
+    {
+        "id": "295a37c3-e591-4e5d-997c-5279df0ac8f7",
+        "messages": [],
+        "users": []
     }
 ]

@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "/Users/ivan/vcpkg/packages/nlohmann-json_arm64-osx/include",
                 "/opt/homebrew/Cellar/pistache/0.4.26/include",
-                "/opt/homebrew/include"
+                "/opt/homebrew/include",
+                "/Users/ivan/vcpkg/installed/arm64-osx/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

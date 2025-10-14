@@ -169,17 +169,35 @@ void Create_New_chat(const Rest::Request& request,Http::ResponseWriter response)
         json body = json::parse(request.body());
         string user1 = body[0];//our user
         string user2 = body[1]; // his contact
-        string id = boost::uuids::to_string(id_genrator());
+        string id;
+        bool ind = false;
         if(!file.is_open()){
             response.send(Http::Code::Bad_Request,"Error");
+            return;
         }
         else{
             file >> data;
             file.close();
-        }
-        
-
-        
+            for(auto chat:data){
+                if(chat["users"].size() == 0){
+                    chat["users"].push_back(user1);
+                    chat["users"].push_back(user2);
+                    ind = true;
+                    id = chat["id"];
+                }
+            }
+            if(ind){
+                ofstream exit_file("data/chats.json");
+                if(!exit_file.is_open()){
+                    response.send(Http::Code::Bad_Gateway,"Error whijle writing");
+                }
+                else{
+                    exit_file << data.dump(4);
+                    exit_file.close();
+                    response.send(Http::Code::Ok,id);
+                }
+            }
+        }   
     }catch(exception& e){
         response.send(Http::Code::Bad_Request,"Error");
     }

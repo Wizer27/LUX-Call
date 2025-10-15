@@ -3,6 +3,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
 #include <nlohmann/json.hpp>
 #include <pistache/endpoint.h>
 #include <pistache/router.h>
@@ -202,6 +203,71 @@ void Create_New_chat(const Rest::Request& request,Http::ResponseWriter response)
         response.send(Http::Code::Bad_Request,"Error");
     }
 }
+bool in(vector<string> main,string username){
+    for(string user:main){
+        if(user == username){
+            return true;
+        }
+    }
+    return false;
+
+}
+
+long long int index(vector<string> main,string find_elem){
+    for(int i = 0; i < main.size();i++){
+        if(main[i] == find_elem){
+            return i;
+        }
+    }
+    return -1;
+}
+
+string get_except(vector<string> main,string rem_elem){
+    long long int ind = index(main,rem_elem);
+    string res;
+    for(int i=0;i<main.size();i++){
+        if(main[i] != rem_elem){
+            res = main[i];
+        }
+    }
+    return res;
+}
+
+//FIXME write the user contact list endpoint
+void get_user_contacts(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }
+    try{
+        json body = json::parse(request.body());
+        string username = body["username"];
+        ifstream file("data/chats.json");
+        if(file.is_open()){
+            cerr << "Error while opening file" << endl;
+            return;
+        }
+        json data;
+        file >> data;
+        file.close();
+        vector<string> contacts;
+        for(const auto chat: data){
+            if(in(chat["users"],username)){
+                string refactor = get_except(chat["users"],username);
+                contacts.push_back(refactor);
+
+            }
+        }
+        try{
+        
+
+        }catch(exception& e){
+            response.send(Http::Code::Bad_Request,"Error while debugs");
+        }
+    }catch(exception& e){
+        response.send(Http::Code::Bad_Request,e.what());
+    }
+}
+
 
 
 
@@ -210,6 +276,7 @@ int main(){
     Rest::Router router;
     Routes::Get(router, "/api/data", Routes::bind(get_main));
     Routes::Post(router, "/api/register", Routes::bind(register_new_user));
+    Routes::Post(router,"/api/create_new_chat",Routes::bind(Create_New_chat));
     server.init();
     server.setHandler(router.handler());
     server.serve();

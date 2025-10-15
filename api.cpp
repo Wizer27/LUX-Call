@@ -241,7 +241,7 @@ void get_user_contacts(const Rest::Request& request,Http::ResponseWriter respons
     try{
         json body = json::parse(request.body());
         string username = body["username"];
-        ifstream file("data/chats.json");
+        ifstream file("data/contacts.json");
         if(file.is_open()){
             cerr << "Error while opening file" << endl;
             return;
@@ -249,25 +249,36 @@ void get_user_contacts(const Rest::Request& request,Http::ResponseWriter respons
         json data;
         file >> data;
         file.close();
-        vector<string> contacts;
-        for(const auto chat: data){
-            if(in(chat["users"],username)){
-                string refactor = get_except(chat["users"],username);
-                contacts.push_back(refactor);
-
+        string contacts;
+        for(const auto user:data){
+            if(user["username"] == username){
+                for(const string cont:user["contacts"]){
+                    contacts += cont + ",/.,/.,/"; //разделитель, потом поменяй на что то более сложное
+                }
             }
         }
         try{
-        
-
+            response.send(Http::Code::Ok,contacts);
         }catch(exception& e){
-            response.send(Http::Code::Bad_Request,"Error while debugs");
+            response.send(Http::Code::Bad_Request,"Error");
         }
     }catch(exception& e){
         response.send(Http::Code::Bad_Request,e.what());
     }
 }
 
+void get_chat_messages(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            auto req = json::parse(request.body());
+            string id = req["id"];
+        }catch(exception& e){
+            response.send(Http::Code::Bad_Request,"Error");
+        }
+    }
+}
 
 
 

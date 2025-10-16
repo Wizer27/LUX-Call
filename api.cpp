@@ -346,6 +346,31 @@ void delete_user_contact(const Rest::Request& request,Http::ResponseWriter respo
         }
     }
 }
+void create_new_contact(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Ivalid signature");
+    }else{
+        auto user_data = json::parse(request.body());
+        string username = user_data["username"];
+        string new_contact = user_data["new_contact"];
+        ifstream file("data/contacts.json");if(!file.is_open()) response.send(Http::Code::Bad_Request,"Error while opening");
+        else{
+            json data;file >> data;file.close();
+            bool indf = false;
+            for(auto& user : data){
+                if(user["username"] == username){ user["contacts"].push_back(new_contact); indf = true;}
+            }if(indf){
+                ofstream exit_file("data/contacts.json");if(!exit_file.is_open()) response.send(Http::Code::Bad_Request,"Error while writing");
+                else{
+                    exit_file << data.dump(4);exit_file.close();
+                    response.send(Http::Code::Ok,"Done");
+                }
+            }
+            
+        }
+    }
+}   
+
 
 void get_chat_messages(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){

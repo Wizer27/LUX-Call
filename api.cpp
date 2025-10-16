@@ -256,6 +256,15 @@ string get_except(vector<string> main,string rem_elem){
     }
     return res;
 }
+bool delete_data_from_vector(vector<string> main,string del){
+    long long int ind = index(main,del);
+    try{
+        main.erase(main.begin() + ind);
+        return true;
+    }catch(exception& e){
+        return false;
+    }
+}
 
 //FIXME write the user contact list endpoint
 void get_user_contacts(const Rest::Request& request,Http::ResponseWriter response){
@@ -288,6 +297,53 @@ void get_user_contacts(const Rest::Request& request,Http::ResponseWriter respons
         }
     }catch(exception& e){
         response.send(Http::Code::Bad_Request,e.what());
+    }
+}
+
+
+void delete_user_contact(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            ifstream file("data/contacts.json");
+            json user_data = json::parse(request.body());
+            string username = user_data["username"];
+            string delete_user = user_data["user_to_delete"];
+            if(!file.is_open()){
+                cerr << "Error" << endl;
+            }else{
+                json data;
+                file >> data;
+                file.close();
+                bool indif = false;
+                for(auto user:data){
+                    if(user["username"] == username){
+                        bool dellets = delete_data_from_vector(user["contacts"],delete_user);
+                        
+                        if(dellets){
+                            indif = true;
+                        }else{
+                            response.send(Http::Code::Not_Found,"Error contact not found");
+                        }
+                    }
+                }
+                if(indif){
+                    ofstream exit_file("data/cointacts.json");
+                    if(!exit_file.is_open()){
+                        response.send(Http::Code::Bad_Request,"Error while writing the data");
+                    }else{
+                        exit_file << data.dump(4);
+                        exit_file.close();
+                        response.send(Http::Code::Ok,"Ok");
+                    }
+                }else{
+                    response.send(Http::Code::Not_Found,"Error user not found");
+                }
+            }
+        }catch(exception& e){
+            response.send(Http::Code::Bad_Request,"Bad request");
+        }
     }
 }
 

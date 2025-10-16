@@ -4,3 +4,9 @@ build/
 ./build
 build/
 build
+venv/
+venv
+/venv/
+/venv
+.venv
+./venv

@@ -151,8 +151,8 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
         return;
     }
     json body = json::parse(request.body());
-    string username = body[0];
-    string hash_pasw = body[1];
+    string username = body["username"];
+    string hash_pasw = body["password"];
 
     try{
         ifstream file("data/users.josn");

@@ -10,3 +10,4 @@ venv
 /venv
 .venv
 ./venv
+data/secrets.json

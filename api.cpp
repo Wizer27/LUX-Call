@@ -97,8 +97,30 @@ SignatureMiddleware siganture_middleware;
 void get_main(const Rest::Request& request,Http::ResponseWriter response){
     response.send(Http::Code::Ok,"Lux-Call API");
 }
+void default_contacts(string username){
+    ifstream file("data/contacts.json");
+    if(!file.is_open()){
+        cerr << "Error" << endl;
+    }else{
+        json data;
+        file >> data;
+        file.close();
+        json new_user_data = {
+            {"username",username},
+            {"contacts",json::array()}
+        };
+        data.push_back(new_user_data);
+        ofstream exit_file("data/contacts.json");
+        if(!exit_file.is_open()){
+            cerr << "Error" << endl;
+        }else{
+            exit_file << data.dump(4);
+            exit_file.close();
+        }
+    }
+}
 void default_chats(string username){
-    ifstream file;
+    ifstream file("data/chats.json");
     json data;
     if(!file.is_open()){
         cerr << "Error file wasnt opened" << endl;
@@ -149,7 +171,9 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
             else{
                 exit_file << data.dump(4);
                 exit_file.close();
+                //default user data
                 default_chats(username);
+                default_contacts(username);
                 response.send(Http::Code::Ok,"Done");
             }
 

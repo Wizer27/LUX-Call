@@ -10,9 +10,7 @@
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 #include <iomanip>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
+
 
 
 
@@ -21,14 +19,14 @@ using namespace Pistache;
 using namespace Pistache::Rest; 
 using json = nlohmann::json;
 
-boost::uuids::random_generator  id_genrator;
+
 
 
 class SecurityManager {
 private:
     string secretKey;
 public:
-    SecurityManager(const std::string& key) : secretKey(key) {}    
+    explicit SecurityManager(const std::string& key) : secretKey(key) {}    
     string generateSignature(const string& data, const string& timestamp) {
         string message = data + timestamp + secretKey;
         
@@ -68,6 +66,7 @@ class SignatureMiddleware{
 private:
     SecurityManager& security;
 public:
+    explicit SignatureMiddleware(SecurityManager& sec) : security(sec) {}
     bool validate_request(const Rest::Request& request){
         auto signature = request.headers().tryGetRaw("X-Signature");
         auto timestamp = request.headers().tryGetRaw("X-Timestamp");
@@ -92,7 +91,33 @@ public:
     }    
 };
 
-SignatureMiddleware siganture_middleware;
+string get_key(){
+    try{
+        ifstream file("/Users/ivan/LUX-Call/data/secrets.json");if(!file.is_open()) std::cerr << "Error while opening file";
+        else{
+            json data;file >> data;file.close();
+            return data["key"]; 
+        }
+    }catch(exception& e){
+        std::cerr << "Error while opening";return "Error";
+    }
+}
+
+string get_api_key(){
+    try{
+        ifstream file("/Users/ivan/LUX-Call/data/secrets.json");if(!file.is_open()) std::cerr << "Error while opening file";
+        else{
+            json data;file >> data;file.close();
+            return data["api"]; 
+        }
+    }catch(exception& e){
+        std::cerr << "Error while opening";return "Error";
+    }
+}
+
+SecurityManager security(get_key());
+
+SignatureMiddleware siganture_middleware(security);
 
 void get_main(const Rest::Request& request,Http::ResponseWriter response){
     response.send(Http::Code::Ok,"Lux-Call API");

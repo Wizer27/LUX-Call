@@ -3,21 +3,33 @@ project(VideoCall)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Явно указываем пути которые нашел find
-find_package(Boost REQUIRED COMPONENTS uuid)
-include_directories("/Users/ivan/vcpkg/installed/arm64-osx/include")
-link_directories("/Users/ivan/vcpkg/installed/arm64-osx/lib")
+# Явно указываем пути к Boost (замените на актуальные пути в вашей системе)
+set(BOOST_ROOT "/opt/homebrew")  # для Homebrew на Apple Silicon
+include_directories(
+    "${BOOST_ROOT}/include"
+    "/opt/homebrew/opt/openssl/include"
+    "/usr/local/include"
+    "/opt/homebrew/include"
+)
+
+link_directories(
+    "${BOOST_ROOT}/lib"
+    "/opt/homebrew/opt/openssl/lib"
+    "/usr/local/lib"
+    "/opt/homebrew/lib"
+)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_executable(videocall main.cpp)
+add_executable(videocall api.cpp)
 
-# Добавляем Boost библиотеки
+# Добавляем все необходимые библиотеки
 target_link_libraries(videocall 
     datachannel 
     srtp2 
     ssl 
     crypto 
     pthread 
-    ${Boost_LIBRARIES}  # Добавляем найденные Boost библиотеки
+    boost_uuid
+    pistache
 )

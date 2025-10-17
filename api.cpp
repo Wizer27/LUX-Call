@@ -10,9 +10,8 @@
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 #include <iomanip>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#include <random>
+
 
 
 
@@ -21,9 +20,27 @@ using namespace std;
 using namespace Pistache;
 using namespace Pistache::Rest; 
 using json = nlohmann::json;
-boost::uuids::random_generator  id_genrator;
 
 
+//random id generator
+std::string generateUUID() {
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<uint64_t> dis;
+
+    uint64_t part1 = dis(gen);
+    uint64_t part2 = dis(gen);
+
+    std::stringstream ss;
+    ss << std::hex << std::setfill('0')
+       << std::setw(8) << (part1 >> 32) << "-"
+       << std::setw(4) << ((part1 >> 16) & 0xFFFF) << "-"
+       << std::setw(4) << (part1 & 0xFFFF) << "-"
+       << std::setw(4) << ((part2 >> 48) & 0xFFFF) << "-"
+       << std::setw(12) << (part2 & 0xFFFFFFFFFFFF);
+    
+    return ss.str();
+}
 
 class SecurityManager {
 private:
@@ -412,12 +429,13 @@ void write_the_message(const Rest::Request& request,Http::ResponseWriter respons
         string message_text = user_data["message"];
         string author = user_data["author"];
         bool indic = false;
+        string id = generateUUID();
         for(auto chat:data){
             if(chat["id"] == chat_id){
                 json new_message = {
                     {"message",message_text},
                     {"author",author},//write the user_id fitch
-                    {"id",boost::uuids::to_string(id_genrator())}
+                    {"id",id}
                 };
                 chat["messages"].push_back(new_message);
                 indic = true;
@@ -437,11 +455,44 @@ void write_the_message(const Rest::Request& request,Http::ResponseWriter respons
     }
 }
 
+struct Message{
+    string id;
+    string author;
+    string message;
+};
 void delete_message(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){ response.send(Http::Code::Forbidden,"Invalid signature"); return;}
     try{
         ifstream file("data/chats.json");if(!file.is_open()) cerr << "Error while opnig the file" << endl;
-        auto user_data = json::parse(request.body());
+        else{
+            auto user_data = json::parse(request.body());
+            string chat_id = user_data["chat_id"];
+            string message_id = user_data["message_id"];
+            json data;file >> data;file.close();
+            bool indif = false;
+            for(auto chat : data){
+                if(chat["id"] == chat_id){
+                    for(int i = 0;i < chat["messages"].size();i++){
+                        if(chat["messages"][i] == message_id){
+                            chat["messages"].erase(chat["messages"].begin() + i);
+                            indif = true;
+                            break;
+                        }
+                }
+                }
+            }if(indif){
+                ofstream exit_file("data/chats.json");if(!exit_file.is_open()){ std::cerr << "Error while opening" << endl;response.send(Http::Code::Bad_Gateway,"Error while writing");}
+                else{
+                    exit_file << data.dump(4);
+                    exit_file.close();
+                    response.send(Http::Code::Ok,"Done");
+                }
+            }else{
+                response.send(Http::Code::Not_Found,"Error not found");
+            }
+        }
+        
+
     }catch(exception& e){
         std::cerr << e.what() << endl;
     }
@@ -455,6 +506,7 @@ void get_chat_messages(const Rest::Request& request,Http::ResponseWriter respons
         try{
             auto req = json::parse(request.body());
             string id = req["id"];
+
         }catch(exception& e){
             response.send(Http::Code::Bad_Request,"Error");
         }

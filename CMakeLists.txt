@@ -3,30 +3,30 @@ project(VideoCall)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Явно указываем пути к Boost (замените на актуальные пути в вашей системе)
-set(BOOST_ROOT "/opt/homebrew")  # для Homebrew на Apple Silicon
+# Все пути
 include_directories(
-    "${BOOST_ROOT}/include"
-    "/opt/homebrew/opt/openssl/include"
-    "/usr/local/include"
-    "/opt/homebrew/include"
+    /usr/local/include
+    /opt/homebrew/include
+    /usr/include
+    /Users/ivan/vcpkg/installed/arm64-osx/include
 )
 
 link_directories(
-    "${BOOST_ROOT}/lib"
-    "/opt/homebrew/opt/openssl/lib"
-    "/usr/local/lib"
-    "/opt/homebrew/lib"
+    /usr/local/lib
+    /opt/homebrew/lib
+    /usr/lib
+    /Users/ivan/vcpkg/installed/arm64-osx/lib
 )
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# Флаги
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -std=c++17")
 
 add_executable(videocall api.cpp)
 
-# Добавляем все необходимые библиотеки
+# Только базовые библиотеки, убираем boost
 target_link_libraries(videocall 
-    ssl 
-    crypto 
-    pthread 
+    pthread
+    ssl
+    crypto
     pistache
 )

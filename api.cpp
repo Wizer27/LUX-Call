@@ -101,6 +101,7 @@ string get_key(){
     }catch(exception& e){
         std::cerr << "Error while opening";return "Error";
     }
+    return NULL;
 }
 
 string get_api_key(){
@@ -113,6 +114,7 @@ string get_api_key(){
     }catch(exception& e){
         std::cerr << "Error while opening";return "Error";
     }
+    return NULL;
 }
 
 SecurityManager security(get_key());

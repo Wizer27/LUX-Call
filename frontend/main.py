@@ -71,14 +71,3 @@ def register_new_user(username:str,hash_password:str) -> bool:
             raise Exception 
     except Exception as e:
         return False
-
-
-
-
-
-
-
-
-
-
-

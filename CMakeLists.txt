@@ -25,11 +25,8 @@ add_executable(videocall api.cpp)
 
 # Добавляем все необходимые библиотеки
 target_link_libraries(videocall 
-    datachannel 
-    srtp2 
     ssl 
     crypto 
     pthread 
-    boost_uuid
     pistache
 )

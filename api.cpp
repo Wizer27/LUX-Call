@@ -332,15 +332,8 @@ void get_user_contacts(const Rest::Request& request,Http::ResponseWriter respons
         string contacts;
         for(const auto user:data){
             if(user["username"] == username){
-                for(const string cont:user["contacts"]){
-                    contacts += cont + ",/.,/.,/"; //разделитель, потом поменяй на что то более сложное
-                }
+                response.send(Http::Code::Ok,user["contacts"].dump(),MIME(Application,Json));
             }
-        }
-        try{
-            response.send(Http::Code::Ok,contacts);
-        }catch(exception& e){
-            response.send(Http::Code::Bad_Request,"Error");
         }
     }catch(exception& e){
         response.send(Http::Code::Bad_Request,e.what());
@@ -491,14 +484,10 @@ void delete_message(const Rest::Request& request,Http::ResponseWriter response){
                 response.send(Http::Code::Not_Found,"Error not found");
             }
         }
-        
-
     }catch(exception& e){
         std::cerr << e.what() << endl;
     }
 }
-
-
 void get_chat_messages(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){
         response.send(Http::Code::Forbidden,"Invalid signature");
@@ -506,7 +495,16 @@ void get_chat_messages(const Rest::Request& request,Http::ResponseWriter respons
         try{
             auto req = json::parse(request.body());
             string id = req["id"];
+            ifstream file("data/chats.json");if(!file.is_open()) response.send(Http::Code::Bad_Request,"Error while opening the file");
+            else{
+                json data;file >> data;file.close();
+                for(const auto chat : data){
+                    if(chat["id"] == id){
+                        response.send(Http::Code::Ok,chat["messages"].dump(),MIME(Application,Json));
+                    }
+                }
 
+            }
         }catch(exception& e){
             response.send(Http::Code::Bad_Request,"Error");
         }

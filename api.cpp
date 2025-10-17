@@ -10,6 +10,9 @@
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 #include <iomanip>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 
 
@@ -18,7 +21,7 @@ using namespace std;
 using namespace Pistache;
 using namespace Pistache::Rest; 
 using json = nlohmann::json;
-
+boost::uuids::random_generator  id_genrator;
 
 
 
@@ -413,7 +416,8 @@ void write_the_message(const Rest::Request& request,Http::ResponseWriter respons
             if(chat["id"] == chat_id){
                 json new_message = {
                     {"message",message_text},
-                    {"author",author}
+                    {"author",author},//write the user_id fitch
+                    {"id",boost::uuids::to_string(id_genrator())}
                 };
                 chat["messages"].push_back(new_message);
                 indic = true;
@@ -430,6 +434,16 @@ void write_the_message(const Rest::Request& request,Http::ResponseWriter respons
             response.send(Http::Code::Not_Found,"Error chat not found");
         }
 
+    }
+}
+
+void delete_message(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){ response.send(Http::Code::Forbidden,"Invalid signature"); return;}
+    try{
+        ifstream file("data/chats.json");if(!file.is_open()) cerr << "Error while opnig the file" << endl;
+        auto user_data = json::parse(request.body());
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
     }
 }
 
@@ -455,6 +469,7 @@ int main(){
     Routes::Get(router, "/api/data", Routes::bind(get_main));
     Routes::Post(router, "/api/register", Routes::bind(register_new_user));
     Routes::Post(router,"/api/create_new_chat",Routes::bind(Create_New_chat));
+    Routes::Post(router,"api/send/message",Routes::bind(write_the_message));
     server.init();
     server.setHandler(router.handler());
     server.serve();

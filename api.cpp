@@ -396,7 +396,42 @@ void create_new_contact(const Rest::Request& request,Http::ResponseWriter respon
             
         }
     }
-}   
+}  
+
+void write_the_message(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        ifstream file("data/chats.json");if(!file.is_open()) std::cerr << "Error while opening";return;
+        json data;file >> data;file.close();
+        auto user_data = json::parse(request.body());
+        string chat_id = user_data["id"];
+        string message_text = user_data["message"];
+        string author = user_data["author"];
+        bool indic = false;
+        for(auto chat:data){
+            if(chat["id"] == chat_id){
+                json new_message = {
+                    {"message",message_text},
+                    {"author",author}
+                };
+                chat["messages"].push_back(new_message);
+                indic = true;
+            }
+        }
+        if(indic){
+            ofstream exit_file("data/chats.json");if(!exit_file.is_open()) response.send(Http::Code::Bad_Request,"Error while opening the file");
+            else{
+                exit_file << data.dump(4);
+                exit_file.close();
+                response.send(Http::Code::Ok,"Done");
+            }
+        }else{
+            response.send(Http::Code::Not_Found,"Error chat not found");
+        }
+
+    }
+}
 
 
 void get_chat_messages(const Rest::Request& request,Http::ResponseWriter response){

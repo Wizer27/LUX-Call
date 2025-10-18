@@ -82,7 +82,28 @@ def register_new_user(username:str,password:str) -> bool:
         print(f"Exception2 : {e}")
         return False
 
-    
+def login(username:str,pasw:str) -> bool:
+    url = "http://0.0.0.0:8080/api/login"
+    data = {
+        "username":username,
+        "psw":pasw
+    }
+    main_siganature = GenerateSignature(get_secret_key(),get_api_key())
+    json_data = json.dumps(data)
+    timestamp = str(int(time.time()))
+    signature = main_siganature.generate(json_data,timestamp)
+    headers = {
+        "Content-Type": "application/json",
+        "X-Signature": signature,
+        "X-Timestamp": timestamp,
+        "X-API-Key": get_api_key()
+    }
+    try:
+        resp = requests.post(url,json = data,headers=headers)
+        return resp.status_code == 200
+    except Exception as e:
+        print(f"Error : {e}")
+
 
 
 
@@ -134,7 +155,7 @@ if not st.session_state.logged_in:
         password = st.text_input("Password", type="password")
         
         if st.button("Sign in"):
-            if login_api(username, hash_password(password)):
+            if login(username, hash_password(password)):
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.rerun()
@@ -146,7 +167,7 @@ if not st.session_state.logged_in:
             st.rerun()
     
     st.stop()
-
+st.success("Loged IN")
 
 
 
@@ -237,5 +258,3 @@ async def create_new_chat(username1:str,username2:str):
         resp = requests.post(url,json = data,headers=headers)
     except Exception as e:
         raise Exception
-
-register_new_user("test_me","364846327846387")

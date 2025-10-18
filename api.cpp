@@ -278,7 +278,7 @@ void login(const Rest::Request& request,Http::ResponseWriter response){
         else{
             json data;file >> data;file.close();
             auto user_data = json::parse(request.body());
-            if(data[user_data["username"]] == user_data["pws"]){
+            if(data[user_data["username"]] == user_data["psw"]){
                 response.send(Http::Code::Ok,"Access secured");
             }else{
                 response.send(Http::Code::Bad_Request,"Access denied");

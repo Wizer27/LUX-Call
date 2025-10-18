@@ -194,8 +194,8 @@ bool is_user_exists(string username){
         ifstream file("/Users/ivan/LUX-Call/data/users.json");if(!file.is_open()) std::cerr << "Error while opening the file" << endl;
         else{
             json data;file >> data;file.close();
-            for(const auto usern : data){
-                if(usern == username){
+            for(const auto& [user,pasw] : data.items()){
+                if(user == username){
                     return true;
                 }
             }
@@ -527,6 +527,31 @@ void get_chat_messages(const Rest::Request& request,Http::ResponseWriter respons
         }
     }
 }
+void search_users(const Rest::Request& request,Http::ResponseWriter response){
+    try{
+        ifstream file(users_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+        else{
+            json data;file >> data;file.close();
+            const auto req_data = json::parse(request.body());
+            vector<string> users_search;
+            for(const auto& [user,pasw] : data.items()){
+                if(user == req_data["search"]){
+                    users_search.push_back(user);
+                }
+            }
+            if(!users_search.empty()){
+                json res = users_search;
+                response.send(Http::Code::Ok,res.dump(),MIME(Application,Json));
+            }else{
+                response.send(Http::Code::Not_Found,"Nothing found :(");
+            }
+
+        }
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
+        response.send(Http::Code::Bad_Request,e.what());
+    }
+}
 
 
 
@@ -536,7 +561,9 @@ int main(){
     Routes::Get(router, "/api/data", Routes::bind(get_main));
     Routes::Post(router, "/api/register", Routes::bind(register_new_user));
     Routes::Post(router,"/api/create_new_chat",Routes::bind(Create_New_chat));
-    Routes::Post(router,"api/send/message",Routes::bind(write_the_message));
+    Routes::Post(router,"/api/send/message",Routes::bind(write_the_message));
+    Routes::Post(router,"/api/get/chat/messages",Routes::bind(get_chat_messages));
+    Routes::Post(router,"/api/search",Routes::bind(search_users));
     server.init();
     server.setHandler(router.handler());
     server.serve();

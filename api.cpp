@@ -576,15 +576,29 @@ void search_users(const Rest::Request& request,Http::ResponseWriter response){
 }
 void write_recent_search_find(const Rest::Request& request,Http::ResponseWriter response){
     try{
-
+        ifstream file(recent_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+        else{
+            json data;file >> data;file.close();
+            auto user_data = json::parse(request.body());
+            for(auto& user : data){
+                if(user["username"] == user_data["username"]){
+                    user["recent"].push_back(user_data["recent"]);
+                    ofstream exit_file(recent_file);if(!exit_file.is_open()) std::cerr << "Error while writing" << endl;
+                    else{
+                        exit_file << data.dump(4);exit_file.close();
+                    }
+                    response.send(Http::Code::Ok,"Done");
+                    return;
+                }
+            }
+            response.send(Http::Code::Not_Found,"Error user not found :(");
+        }
     }catch(exception& e){
         std::cerr << e.what() << endl;
         response.send(Http::Code::Bad_Request,e.what());
         return;
     }
 }
-
-
 
 int main(){
     Http::Endpoint server(Address("*:8080")); 

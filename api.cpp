@@ -239,8 +239,8 @@ void Create_New_chat(const Rest::Request& request,Http::ResponseWriter response)
         ifstream file("data/chats.json");
         json data;
         json body = json::parse(request.body());
-        string user1 = body[0];//our user
-        string user2 = body[1]; // his contact
+        string user1 = body["user1"];//our user
+        string user2 = body["user2"]; // his contact
         string id;
         bool ind = false;
         if(!file.is_open()){

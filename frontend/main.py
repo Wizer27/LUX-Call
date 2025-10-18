@@ -45,9 +45,9 @@ def get_api_key() -> str:
         return "Error"    
     
 
-def register_new_user(username:str,hash_password:str) -> bool:
+async def register_new_user(username:str,hash_password:str) -> bool:
     try:
-        url = "http://0.0.0.0:8080/api.register"
+        url = "http://0.0.0.0:8080/api/register"
         data = {
             "username":username,
             "password":hash_password
@@ -67,7 +67,30 @@ def register_new_user(username:str,hash_password:str) -> bool:
             #DEBUG
             print(resp.status_code)
             print(resp.text)
+            return resp.status_code == 200
         except Exception as e:
             raise Exception 
     except Exception as e:
         return False
+
+async def create_new_chat(username1:str,username2:str):
+    url = "http://0.0.0.0:8080/api/create_new_chat"
+    data = {
+        "user1":username1,
+        "user2":username2
+    }
+    main_siganature = GenerateSignature(get_secret_key(),get_api_key())
+    json_data = json.dumps(data)
+    timestamp = str(int(time.time()))
+    signature = main_siganature.generate(json_data,timestamp)
+    headers = {
+            "Content-Type": "application/json",
+            "X-Signature": signature,
+            "X-Timestamp": timestamp,
+            "X-API-Key": get_api_key()
+    }
+    try:
+        resp = requests.post(url,json = data,headers=headers)
+    except Exception as e:
+        raise Exception
+

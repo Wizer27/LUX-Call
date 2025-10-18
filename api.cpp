@@ -268,6 +268,28 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
         response.send(Http::Code::Bad_Request,"Error");
     }
 }
+void login(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+            response.send(Http::Code::Forbidden,"invalid signature");
+            return;
+    }        
+    try{
+        ifstream file(users_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+        else{
+            json data;file >> data;file.close();
+            auto user_data = json::parse(request.body());
+            if(data[user_data["username"]] == user_data["pws"]){
+                response.send(Http::Code::Ok,"Access secured");
+            }else{
+                response.send(Http::Code::Bad_Request,"Access denied");
+            }
+        }
+    }catch(exception& e){
+        response.send(Http::Code::Bad_Request,e.what());
+        std::cerr << "Exception: " << e.what() << endl;
+        return;
+    }
+}
 
 void Create_New_chat(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){
@@ -656,6 +678,7 @@ int main(){
     Routes::Post(router,"/api/get/chat/messages",Routes::bind(get_chat_messages));
     Routes::Post(router,"/api/search",Routes::bind(search_users));
     Routes::Post(router,"/api/write/recent",Routes::bind(write_recent_search_find));
+    Routes::Post(router,"/api/login",Routes::bind(login));
     server.init();
     server.setHandler(router.handler());
     server.serve();

@@ -22,6 +22,13 @@ using namespace Pistache::Rest;
 using json = nlohmann::json;
 
 
+//Data files cache
+string contatcts_file = "/Users/ivan/LUX-Call/data/contacts.json";
+string users_file = "/Users/ivan/LUX-Call/data/users.json";
+string chats_file = "/Users/ivan/LUX-Call/data/chats.json";
+string secrets_file = "/Users/ivan/LUX-Call/data/secrets.json";
+
+
 //random id generator
 std::string generateUUID() {
     std::random_device rd;
@@ -41,6 +48,32 @@ std::string generateUUID() {
     
     return ss.str();
 }
+string get_key(){
+    try{
+        ifstream file("/Users/ivan/LUX-Call/data/secrets.json");if(!file.is_open()) std::cerr << "Error while opening file";
+        else{
+            json data;file >> data;file.close();
+            return data["key"]; 
+        }
+    }catch(exception& e){
+        std::cerr << "Error while opening";return "Error";
+    }
+    return NULL;
+}
+
+string get_api_key(){
+    try{
+        ifstream file("/Users/ivan/LUX-Call/data/secrets.json");if(!file.is_open()) std::cerr << "Error while opening file";
+        else{
+            json data;file >> data;file.close();
+            return data["api"]; 
+        }
+    }catch(exception& e){
+        std::cerr << "Error while opening";return "Error";
+    }
+    return NULL;
+}
+
 
 class SecurityManager {
 private:
@@ -104,38 +137,27 @@ public:
             return false;
         }
         
-        const string data = request.body() + time_req + apiKey_req;
+        const string data = request.body() + time_req + get_key();
 
-        return security.verifySignature(data,time_req,req_sig);
+
+        std::cout << "=== C++ DEBUG ===" << std::endl;
+        std::cout << "Request body: '" << request.body() << "'" << std::endl;
+        std::cout << "Timestamp: '" << time_req << "'" << std::endl;
+        std::cout << "Secret key: '" << get_key() << "'" << std::endl;
+        std::cout << "Full message for signature: '" << data << "'" << std::endl;
+        std::cout << "Received signature: '" << req_sig << "'" << std::endl;
+        
+        string expected = security.generateSignature(request.body(), time_req);
+        std::cout << "Expected signature: '" << expected << "'" << std::endl;
+        std::cout << "Match: " << (req_sig == expected) << std::endl;
+        std::cout << "=== END DEBUG ===" << std::endl;
+
+        return security.verifySignature(request.body(),time_req,req_sig);
 
     }    
 };
 
-string get_key(){
-    try{
-        ifstream file("/Users/ivan/LUX-Call/data/secrets.json");if(!file.is_open()) std::cerr << "Error while opening file";
-        else{
-            json data;file >> data;file.close();
-            return data["key"]; 
-        }
-    }catch(exception& e){
-        std::cerr << "Error while opening";return "Error";
-    }
-    return NULL;
-}
 
-string get_api_key(){
-    try{
-        ifstream file("/Users/ivan/LUX-Call/data/secrets.json");if(!file.is_open()) std::cerr << "Error while opening file";
-        else{
-            json data;file >> data;file.close();
-            return data["api"]; 
-        }
-    }catch(exception& e){
-        std::cerr << "Error while opening";return "Error";
-    }
-    return NULL;
-}
 
 SecurityManager security(get_key());
 
@@ -145,7 +167,7 @@ void get_main(const Rest::Request& request,Http::ResponseWriter response){
     response.send(Http::Code::Ok,"Lux-Call API");
 }
 void default_contacts(string username){
-    ifstream file("data/contacts.json");
+    ifstream file("/Users/ivan/LUX-Call/data/contacts.json");
     if(!file.is_open()){
         cerr << "Error" << endl;
     }else{
@@ -157,7 +179,7 @@ void default_contacts(string username){
             {"contacts",json::array()}
         };
         data.push_back(new_user_data);
-        ofstream exit_file("data/contacts.json");
+        ofstream exit_file("/Users/ivan/LUX-Call/data/contacts.json");
         if(!exit_file.is_open()){
             cerr << "Error" << endl;
         }else{
@@ -166,43 +188,38 @@ void default_contacts(string username){
         }
     }
 }
-void default_chats(string username){
-    ifstream file("data/chats.json");
-    json data;
-    if(!file.is_open()){
-        cerr << "Error file wasnt opened" << endl;
-        return;
-    }
-    else{
-        file >> data;
-        file.close();
-        json new_user = {
-            {"username",username},
-            {"chats",json::array()}
-        };
-        ofstream exit_file("data/chats.json");
-        if(!exit_file.is_open()){
-            cerr << "Error while writing the data" << endl;
-            return;
-        }
+
+bool is_user_exists(string username){
+    try{
+        ifstream file("/Users/ivan/LUX-Call/data/users.json");if(!file.is_open()) std::cerr << "Error while opening the file" << endl;
         else{
-            exit_file << data.dump(4);
-            exit_file.close();
+            json data;file >> data;file.close();
+            for(const auto usern : data){
+                if(usern == username){
+                    return true;
+                }
+            }
+            return false;
         }
-        
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
+        return false;
     }
 }
 void register_new_user(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){
-        response.send(Http::Code::Forbidden,"Invalid siganture");
+        response.send(Http::Code::Forbidden,"Invalid signature");
         return;
     }
     json body = json::parse(request.body());
     string username = body["username"];
     string hash_pasw = body["password"];
-
+    if(is_user_exists(username)){
+        response.send(Http::Code::Bad_Request,"Error user already exists");
+        return;
+    }
     try{
-        ifstream file("data/users.josn");
+        ifstream file("/Users/ivan/LUX-Call/data/users.json");
         if(!file.is_open()){
             response.send(Http::Code::Bad_Request,"Error file wanst opened");
         }
@@ -211,15 +228,15 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
             file >> data;
             file.close();
             data[username] = hash_pasw;
-            ofstream exit_file("data/users.json");
+            ofstream exit_file("/Users/ivan/LUX-Call/data/users.json");
             if(!exit_file.is_open()){
                 response.send(Http::Code::Bad_Request,"Error while writing data");
+                std::cerr << "Error 1" << endl;
             }
             else{
                 exit_file << data.dump(4);
                 exit_file.close();
                 //default user data
-                default_chats(username);
                 default_contacts(username);
                 response.send(Http::Code::Ok,"Done");
             }

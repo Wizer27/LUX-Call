@@ -29,7 +29,7 @@ def hash_password(password:str) -> str:
     hashed = hashlib.sha256(password_bytes).hexdigest()
     return hashed 
 def get_secret_key() -> str:
-    with open("data/secrets.json","r") as file:
+    with open("/Users/ivan/LUX-Call/data/secrets.json","r") as file:
         data = json.load(file)
     try:
         return data["key"]
@@ -37,7 +37,7 @@ def get_secret_key() -> str:
         return "Error"    
 
 def get_api_key() -> str:
-    with open("data/secrets.json","r") as file:
+    with open("/Users/ivan/LUX-Call/data/secrets.json","r") as file:
         data = json.load(file)
     try:
         return data["key"]
@@ -45,12 +45,12 @@ def get_api_key() -> str:
         return "Error"    
     
 
-async def register_new_user(username:str,hash_password:str) -> bool:
+def register_new_user(username:str,password:str) -> bool:
     try:
         url = "http://0.0.0.0:8080/api/register"
         data = {
             "username":username,
-            "password":hash_password
+            "password":hash_password(password)
         }
         main_siganature = GenerateSignature(get_secret_key(),get_api_key())
         json_data = json.dumps(data)
@@ -69,8 +69,9 @@ async def register_new_user(username:str,hash_password:str) -> bool:
             print(resp.text)
             return resp.status_code == 200
         except Exception as e:
-            raise Exception 
+            print(f"Exception1: {e}")
     except Exception as e:
+        print(f"Exception2 : {e}")
         return False
 
 async def create_new_chat(username1:str,username2:str):
@@ -94,3 +95,4 @@ async def create_new_chat(username1:str,username2:str):
     except Exception as e:
         raise Exception
 
+register_new_user("test_me","364846327846387")

@@ -199,6 +199,7 @@ void default_recent(string username){
                 {"username",username},
                 {"recent",json::array()}
             };
+            data.push_back(new_user_data);
             ofstream exit_file(recent_file);if(!exit_file.is_open()) std::cerr << "Error while writing the data" << endl;
             else{
                 exit_file << data.dump(4);

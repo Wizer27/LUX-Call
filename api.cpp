@@ -27,6 +27,8 @@ string contatcts_file = "/Users/ivan/LUX-Call/data/contacts.json";
 string users_file = "/Users/ivan/LUX-Call/data/users.json";
 string chats_file = "/Users/ivan/LUX-Call/data/chats.json";
 string secrets_file = "/Users/ivan/LUX-Call/data/secrets.json";
+string recent_file = "/Users/ivan/LUX-Call/data/recent.json";
+
 
 
 //random id generator
@@ -188,6 +190,25 @@ void default_contacts(string username){
         }
     }
 }
+void default_recent(string username){
+    try{
+        ifstream file(recent_file);if(!file.is_open()) std::cerr << "Error while opening the file" << endl;
+        else{
+            json data;file >> data;file.close();
+            json new_user_data = {
+                {"username",username},
+                {"recent",json::array()}
+            };
+            ofstream exit_file(recent_file);if(!exit_file.is_open()) std::cerr << "Error while writing the data" << endl;
+            else{
+                exit_file << data.dump(4);
+                exit_file.close();
+            }
+        }
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
+    }
+}
 
 bool is_user_exists(string username){
     try{
@@ -238,6 +259,7 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
                 exit_file.close();
                 //default user data
                 default_contacts(username);
+                default_recent(username);
                 response.send(Http::Code::Ok,"Done");
             }
 
@@ -550,6 +572,15 @@ void search_users(const Rest::Request& request,Http::ResponseWriter response){
     }catch(exception& e){
         std::cerr << e.what() << endl;
         response.send(Http::Code::Bad_Request,e.what());
+    }
+}
+void write_recent_search_find(const Rest::Request& request,Http::ResponseWriter response){
+    try{
+
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
+        response.send(Http::Code::Bad_Request,e.what());
+        return;
     }
 }
 

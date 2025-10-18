@@ -550,55 +550,101 @@ void get_chat_messages(const Rest::Request& request,Http::ResponseWriter respons
     }
 }
 void search_users(const Rest::Request& request,Http::ResponseWriter response){
-    try{
-        ifstream file(users_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
-        else{
-            json data;file >> data;file.close();
-            const auto req_data = json::parse(request.body());
-            vector<string> users_search;
-            for(const auto& [user,pasw] : data.items()){
-                if(user == req_data["search"]){
-                    users_search.push_back(user);
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            ifstream file(users_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+            else{
+                json data;file >> data;file.close();
+                const auto req_data = json::parse(request.body());
+                vector<string> users_search;
+                for(const auto& [user,pasw] : data.items()){
+                    if(user == req_data["search"]){
+                        users_search.push_back(user);
+                    }
                 }
-            }
-            if(!users_search.empty()){
-                json res = users_search;
-                response.send(Http::Code::Ok,res.dump(),MIME(Application,Json));
-            }else{
-                response.send(Http::Code::Not_Found,"Nothing found :(");
-            }
+                if(!users_search.empty()){
+                    json res = users_search;
+                    response.send(Http::Code::Ok,res.dump(),MIME(Application,Json));
+                }else{
+                    response.send(Http::Code::Not_Found,"Nothing found :(");
+                }
 
-        }
-    }catch(exception& e){
-        std::cerr << e.what() << endl;
-        response.send(Http::Code::Bad_Request,e.what());
+            }
+        }catch(exception& e){
+            std::cerr << e.what() << endl;
+            response.send(Http::Code::Bad_Request,e.what());
+        }   
     }
 }
 void write_recent_search_find(const Rest::Request& request,Http::ResponseWriter response){
-    try{
-        ifstream file(recent_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
-        else{
-            json data;file >> data;file.close();
-            auto user_data = json::parse(request.body());
-            for(auto& user : data){
-                if(user["username"] == user_data["username"]){
-                    user["recent"].push_back(user_data["recent"]);
-                    ofstream exit_file(recent_file);if(!exit_file.is_open()) std::cerr << "Error while writing" << endl;
-                    else{
-                        exit_file << data.dump(4);exit_file.close();
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            ifstream file(recent_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+            else{
+                json data;file >> data;file.close();
+                auto user_data = json::parse(request.body());
+                for(auto& user : data){
+                    if(user["username"] == user_data["username"]){
+                        user["recent"].push_back(user_data["recent"]);
+                        ofstream exit_file(recent_file);if(!exit_file.is_open()) std::cerr << "Error while writing" << endl;
+                        else{
+                            exit_file << data.dump(4);exit_file.close();
+                        }
+                        response.send(Http::Code::Ok,"Done");
+                        return;
                     }
-                    response.send(Http::Code::Ok,"Done");
-                    return;
                 }
+                response.send(Http::Code::Not_Found,"Error user not found :(");
             }
-            response.send(Http::Code::Not_Found,"Error user not found :(");
+        }catch(exception& e){
+            std::cerr << e.what() << endl;
+            response.send(Http::Code::Bad_Request,e.what());
+            return;
         }
-    }catch(exception& e){
-        std::cerr << e.what() << endl;
-        response.send(Http::Code::Bad_Request,e.what());
-        return;
     }
 }
+void delete_from_recent(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            bool indif = false;
+            ifstream file(recent_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+            else{
+                json data;file >> data;file.close();
+                auto req_data = json::parse(request.body());
+                for(auto user:data){
+                    if(user["username"] == req_data["username"]){
+                        indif = true;
+                        long long int ind = index(user["recent"],req_data["to_delete"]);
+                        if(ind != -1){
+                            user["recent"].erase(user["recent"].begin() + ind);
+                            ofstream exit_file(recent_file);if(!exit_file.is_open()) std::cerr << "Error while writing" << endl;
+                            else{
+                                exit_file << data.dump(4);exit_file.close();
+                                response.send(Http::Code::Ok,"Done");
+
+                            }
+                        }else{
+                            response.send(Http::Code::Not_Found,"Recent user not found");
+                        }
+                    }
+                }if(!indif){
+                    response.send(Http::Code::Not_Found,"User not found");
+                }
+            }
+        }catch(exception& e){
+            response.send(Http::Code::Bad_Request,e.what());
+            std::cerr << e.what() << endl;
+            return;
+        }
+    }
+}
+
 
 int main(){
     Http::Endpoint server(Address("*:8080")); 
@@ -609,6 +655,7 @@ int main(){
     Routes::Post(router,"/api/send/message",Routes::bind(write_the_message));
     Routes::Post(router,"/api/get/chat/messages",Routes::bind(get_chat_messages));
     Routes::Post(router,"/api/search",Routes::bind(search_users));
+    Routes::Post(router,"/api/write/recent",Routes::bind(write_recent_search_find));
     server.init();
     server.setHandler(router.handler());
     server.serve();

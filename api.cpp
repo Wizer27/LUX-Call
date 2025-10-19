@@ -336,6 +336,37 @@ void Create_New_chat(const Rest::Request& request,Http::ResponseWriter response)
         response.send(Http::Code::Bad_Request,"Error");
     }
 }
+void delete_the_chat(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        bool indif = false;
+        try{
+            ifstream file(chats_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+            else{
+                json data;file >> data;file.close();
+                const auto user_data = json::parse(request.body());
+                for(auto& chat:data){
+                    if(chat["id"] == user_data["chat_id"]){
+                        chat["messages"] = json::array();
+                        chat["users"] = json::array();
+                        ofstream exit_file(chats_file);if(!exit_file.is_open()) std::cerr << "Error while writing" << endl;
+                        else{
+                            exit_file << data.dump(4);exit_file.close();indif = true;
+                            response.send(Http::Code::Ok,"Done");
+                        }
+                    }
+                }
+            }
+            if(!indif){
+                response.send(Http::Code::Not_Found,"Error chat not found");
+            }
+        }catch(exception& e){
+            std::cerr << e.what() << endl;
+            response.send(Http::Code::Bad_Request,e.what());
+        }
+    }
+}
 bool in(vector<string> main,string username){
     for(string user:main){
         if(user == username){
@@ -680,6 +711,7 @@ int main(){
     Routes::Post(router,"/api/search",Routes::bind(search_users));
     Routes::Post(router,"/api/write/recent",Routes::bind(write_recent_search_find));
     Routes::Post(router,"/api/login",Routes::bind(login));
+    Routes::Post(router,"/api/delete/chat",Routes::bind(delete_the_chat));
     server.init();
     server.setHandler(router.handler());
     server.serve();

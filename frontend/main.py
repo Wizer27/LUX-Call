@@ -238,7 +238,7 @@ def register_new_user(username:str,password:str) -> bool:
         print(f"Exception2 : {e}")
         return False
 
-async def create_new_chat(username1:str,username2:str):
+def create_new_chat(username1:str,username2:str):
     url = "http://0.0.0.0:8080/api/create_new_chat"
     data = {
         "user1":username1,
@@ -259,3 +259,35 @@ async def create_new_chat(username1:str,username2:str):
     except Exception as e:
         raise Exception
 #write the file fitch in C++ api
+def search(search:str):
+    try:
+        url = "http://0.0.0.0:8080/api/search"
+        data = {
+            "search":search
+        }
+        main_sig = GenerateSignature(get_secret_key(),get_api_key())
+        json_data = json.dumps(data)
+        timestamp = str(int(time.time()))
+        signature = main_sig.generate(json_data,timestamp)
+        headers = {
+                "Content-Type": "application/json",
+                "X-Signature": signature,
+                "X-Timestamp": timestamp,
+                "X-API-Key": get_api_key()
+        }
+        resp = requests.post(url,json = data,headers=headers)
+        print(f"STATUS CODE : {resp.status_code}")
+        return resp.json()
+    except Exception as e:
+        print(f"Error : {e}")
+
+
+with st.sidebar:
+    main_search = st.text_input(
+        "Search",
+        placeholder="Search...",
+        label_visibility="collapsed"
+    )
+    if main_search != "":
+        result = search(main_search)
+        print(result)   

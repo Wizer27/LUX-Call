@@ -3,14 +3,16 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
+#include <random>
+#include <algorithm>
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include <pistache/endpoint.h>
 #include <pistache/router.h>
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
-#include <iomanip>
-#include <random>
+
 
 
 
@@ -596,7 +598,6 @@ void get_chat_messages(const Rest::Request& request,Http::ResponseWriter respons
                         response.send(Http::Code::Ok,chat["messages"].dump(),MIME(Application,Json));
                     }
                 }
-
             }
         }catch(exception& e){
             response.send(Http::Code::Bad_Request,"Error");
@@ -614,7 +615,7 @@ void search_users(const Rest::Request& request,Http::ResponseWriter response){
                 const auto req_data = json::parse(request.body());
                 vector<string> users_search;
                 for(const auto& [user,pasw] : data.items()){
-                    if(user == req_data["search"]){
+                    if(user == req_data["search"] || user.find(req_data["search"]) != string::npos || to_string(req_data["search"]).find(user) != string::npos){
                         users_search.push_back(user);
                     }
                 }

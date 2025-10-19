@@ -230,6 +230,45 @@ bool is_user_exists(string username){
         return false;
     }
 }
+
+bool in(vector<string> main,string username){
+    for(string user:main){
+        if(user == username){
+            return true;
+        }
+    }
+    return false;
+
+}
+
+long long int index(vector<string> main,string find_elem){
+    for(int i = 0; i < main.size();i++){
+        if(main[i] == find_elem){
+            return i;
+        }
+    }
+    return -1;
+}
+
+string get_except(vector<string> main,string rem_elem){
+    long long int ind = index(main,rem_elem);
+    string res;
+    for(int i=0;i<main.size();i++){
+        if(main[i] != rem_elem){
+            res = main[i];
+        }
+    }
+    return res;
+}
+bool delete_data_from_vector(vector<string> main,string del){
+    long long int ind = index(main,del);
+    try{
+        main.erase(main.begin() + ind);
+        return true;
+    }catch(exception& e){
+        return false;
+    }
+}
 void register_new_user(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){
         response.send(Http::Code::Forbidden,"Invalid signature");
@@ -369,46 +408,37 @@ void delete_the_chat(const Rest::Request& request,Http::ResponseWriter response)
         }
     }
 }
-bool in(vector<string> main,string username){
-    for(string user:main){
-        if(user == username){
-            return true;
+
+void get_user_chats(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            ifstream file(chats_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+            else{
+                json data;file >> data;file.close();
+                vector<json> chats;
+                const auto user_data = json::parse(request.body());
+                for(const auto& chat:data){
+                    if(in(chat["users"],user_data["username"])){
+                        chats.push_back(chat);
+                    }
+                }
+                if(!chats.empty()){
+                    json result = chats;
+                    response.send(Http::Code::Ok,result.dump(),MIME(Application,Json));
+                }else{
+                    response.send(Http::Code::Not_Found,"Users doesnt have any chats");
+                }
+            }
+        }catch(exception& e){
+            std::cerr << "Exception: " << e.what();
+            response.send(Http::Code::Bad_Request,e.what());
+            return;
         }
     }
-    return false;
-
 }
 
-long long int index(vector<string> main,string find_elem){
-    for(int i = 0; i < main.size();i++){
-        if(main[i] == find_elem){
-            return i;
-        }
-    }
-    return -1;
-}
-
-string get_except(vector<string> main,string rem_elem){
-    long long int ind = index(main,rem_elem);
-    string res;
-    for(int i=0;i<main.size();i++){
-        if(main[i] != rem_elem){
-            res = main[i];
-        }
-    }
-    return res;
-}
-bool delete_data_from_vector(vector<string> main,string del){
-    long long int ind = index(main,del);
-    try{
-        main.erase(main.begin() + ind);
-        return true;
-    }catch(exception& e){
-        return false;
-    }
-}
-
-//FIXME write the user contact list endpoint
 void get_user_contacts(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){
         response.send(Http::Code::Forbidden,"Invalid signature");
@@ -505,7 +535,6 @@ void create_new_contact(const Rest::Request& request,Http::ResponseWriter respon
         }
     }
 }  
-
 void write_the_message(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){
         response.send(Http::Code::Forbidden,"Invalid signature");
@@ -513,9 +542,10 @@ void write_the_message(const Rest::Request& request,Http::ResponseWriter respons
         ifstream file("data/chats.json");if(!file.is_open()) std::cerr << "Error while opening";return;
         json data;file >> data;file.close();
         auto user_data = json::parse(request.body());
-        string chat_id = user_data["id"];
-        string message_text = user_data["message"];
-        string author = user_data["author"];
+        const string chat_id = user_data["id"];
+        const string message_text = user_data["message"];
+        const string author = user_data["author"];
+        const auto files = user_data["files"];
         bool indic = false;
         string id = generateUUID();
         for(auto chat:data){
@@ -523,7 +553,8 @@ void write_the_message(const Rest::Request& request,Http::ResponseWriter respons
                 json new_message = {
                     {"message",message_text},
                     {"author",author},//write the user_id fitch
-                    {"id",id}
+                    {"id",id},
+                    {"files",files}
                 };
                 chat["messages"].push_back(new_message);
                 indic = true;

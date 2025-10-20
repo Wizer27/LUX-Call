@@ -1,69 +1,84 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const Main());
 }
-
-// Корневой виджет приложения
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class Main extends StatelessWidget {
+  const Main({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Мое первое приложение',
+      title: 'Lux-Call',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const MyHomePage(), // Первый экран
+      home: const AuthScreen(), 
     );
   }
 }
-
-// Экран с состоянием (здесь будет меняться счетчик)
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class AuthScreen extends StatefulWidget {
+  const AuthScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<AuthScreen> createState() => AuthScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // Вызов setState заставляет виджет перерисоваться
-      _counter++;
-    });
-  }
-
+class AuthScreenState extends State<AuthScreen> {
+  final TextEditingController username_cont = TextEditingController();
+  final TextEditingController password_cont = TextEditingController();
+  bool is_login = true;
   @override
   Widget build(BuildContext context) {
-    // Scaffold - это базовый "каркас" экрана (AppBar, тело и т.д.)
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Пример Flutter'),
-      ),
-      body: Center(
-        // Center - виджет, который центрирует своего ребенка
+      appBar: AppBar(title: Text(is_login ? 'Login' : 'Register')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          // Column - располагает виджеты вертикально
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Счетчик:',
+          children: [
+            // Поле email
+            TextField(
+              controller: username_cont,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            const SizedBox(height: 16),
+            
+            // Поле пароля
+            TextField(
+              controller: password_cont,
+              obscureText: true, // Скрываем пароль
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Кнопка входа/регистрации
+            ElevatedButton(
+              onPressed: _auth,
+              child: Text(is_login ? 'Login' : 'Register'),
+            ),
+            const SizedBox(height: 10),
+            
+            // Переключение между входом и регистрацией
+            TextButton(
+              onPressed: () => setState(() => is_login = !is_login),
+              child: Text(is_login
+                ? 'Register' 
+                : 'Login'
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Увеличить',
-        child: const Icon(Icons.add),
-      ),
     );
   }
+  void _auth(){
+
+  }
+
+
 }

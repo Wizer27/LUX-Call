@@ -259,6 +259,7 @@ def create_new_chat(username1:str,username2:str):
     except Exception as e:
         raise Exception
 #write the file fitch in C++ api
+
 def search(search:str):
     try:
         url = "http://0.0.0.0:8080/api/search"

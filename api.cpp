@@ -535,6 +535,7 @@ void create_new_contact(const Rest::Request& request,Http::ResponseWriter respon
         }
     }
 }  
+//FIXME WRITE THE HISTORY OF CHAT CALLS
 void write_the_message(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){
         response.send(Http::Code::Forbidden,"Invalid signature");
@@ -546,6 +547,7 @@ void write_the_message(const Rest::Request& request,Http::ResponseWriter respons
         const string message_text = user_data["message"];
         const string author = user_data["author"];
         const auto files = user_data["files"];
+        const string time = user_data["time"];
         bool indic = false;
         string id = generateUUID();
         for(auto chat:data){
@@ -554,7 +556,8 @@ void write_the_message(const Rest::Request& request,Http::ResponseWriter respons
                     {"message",message_text},
                     {"author",author},//write the user_id fitch
                     {"id",id},
-                    {"files",files}
+                    {"files",files},
+                    {"time",time}
                 };
                 chat["messages"].push_back(new_message);
                 indic = true;
@@ -571,6 +574,44 @@ void write_the_message(const Rest::Request& request,Http::ResponseWriter respons
             response.send(Http::Code::Not_Found,"Error chat not found");
         }
 
+    }
+}
+void write_call(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            bool indf = false;
+            ifstream file(chats_file);if(!file.is_open()) std::cerr << "Error while opening the file" << endl;
+            json data;file >> data;file.close();
+            const auto user_data = json::parse(request.body());
+            for(auto chat : data){
+                if(chat["id"] == user_data["chat_id"]){
+                    indf = true;
+                    json new_call  = {
+                        {"from",user_data["from"]},
+                        {"to",user_data["to"]},
+                        {"date",user_data["date"]},
+                        {"type",user_data["type"]}
+                    };
+                    chat["messages"].push_back(new_call);
+                    ofstream exit_file(chats_file);if(!exit_file.is_open()) std::cerr << "Error while writing the data" << endl;
+                    else{
+                        exit_file << data.dump(4);
+                        exit_file.close();
+                        response.send(Http::Code::Ok,"Done");
+                    }
+                     
+                }
+            }
+            if(!indf){
+                response.send(Http::Code::Not_Found,"Error no chats found");
+            }
+        }catch(exception& e){
+            std::cerr << e.what() << endl;
+            response.send(Http::Code::Bad_Request,e.what());
+            return;
+        }
     }
 }
 
@@ -744,6 +785,7 @@ int main(){
     Routes::Post(router,"/api/write/recent",Routes::bind(write_recent_search_find));
     Routes::Post(router,"/api/login",Routes::bind(login));
     Routes::Post(router,"/api/delete/chat",Routes::bind(delete_the_chat));
+    Routes::Post(router,"/api/write/call",Routes::bind(write_call));
     server.init();
     server.setHandler(router.handler());
     server.serve();

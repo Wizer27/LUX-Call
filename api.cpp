@@ -597,6 +597,32 @@ void write_the_message(const Rest::Request& request,Http::ResponseWriter respons
 
     }
 }
+void write_call_to_user(string username,string from,string date){
+    try{
+        ifstream file(history_calls);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+        else{
+            json data;file >> data;file.close();
+            for(auto user : data){
+                if(user["username"] == username){
+                    json new_call = {
+                        {"to",username},
+                        {"from",from},
+                        {"date",date},
+                        {"id",generateUUID()}
+                    };
+                    user["calls"].push_back(new_call);
+                    ofstream exit_file(history_calls);if(!file.is_open()) std::cerr << "Error while writing" << endl;
+                    else{
+                        exit_file << data.dump(4);
+                        exit_file.close();
+                    }
+                }
+            }
+        }
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
+    }
+}
 void write_call(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){
         response.send(Http::Code::Forbidden,"Invalid signature");
@@ -613,13 +639,15 @@ void write_call(const Rest::Request& request,Http::ResponseWriter response){
                         {"from",user_data["from"]},
                         {"to",user_data["to"]},
                         {"date",user_data["date"]},
-                        {"type",user_data["type"]}
+                        {"type",user_data["type"]},
+                        {"id",generateUUID()}
                     };
                     chat["messages"].push_back(new_call);
                     ofstream exit_file(chats_file);if(!exit_file.is_open()) std::cerr << "Error while writing the data" << endl;
                     else{
                         exit_file << data.dump(4);
                         exit_file.close();
+                        write_call_to_user(user_data["to"],user_data["form"],user_data["date"]);
                         response.send(Http::Code::Ok,"Done");
                     }
                      
@@ -635,7 +663,7 @@ void write_call(const Rest::Request& request,Http::ResponseWriter response){
         }
     }
 }
-//history
+
 
 struct Message{
     string id;

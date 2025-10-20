@@ -30,7 +30,7 @@ string users_file = "/Users/ivan/LUX-Call/data/users.json";
 string chats_file = "/Users/ivan/LUX-Call/data/chats.json";
 string secrets_file = "/Users/ivan/LUX-Call/data/secrets.json";
 string recent_file = "/Users/ivan/LUX-Call/data/recent.json";
-
+string history_calls = "/Users/ivan/LUX-Call/data/calls_history.json";
 
 
 //random id generator
@@ -170,6 +170,26 @@ SignatureMiddleware siganture_middleware(security);
 void get_main(const Rest::Request& request,Http::ResponseWriter response){
     response.send(Http::Code::Ok,"Lux-Call API");
 }
+void default_calls_history(const string username){
+    try{
+        ifstream file(history_calls);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+        else{
+            json data;file >> data;file.close();
+            json new_user_data = {
+                {"username",username},
+                {"calls",json::array()}
+            };
+            data.push_back(new_user_data);
+            ofstream exit_file(history_calls);if(!exit_file.is_open()) std::cerr << "Error while writing" << endl;
+            else{
+                exit_file << data.dump(4);
+                exit_file.close();
+            }
+        }
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
+    }
+}
 void default_contacts(string username){
     ifstream file("/Users/ivan/LUX-Call/data/contacts.json");
     if(!file.is_open()){
@@ -302,6 +322,7 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
                 //default user data
                 default_contacts(username);
                 default_recent(username);
+                default_calls_history(username);
                 response.send(Http::Code::Ok,"Done");
             }
 
@@ -614,6 +635,7 @@ void write_call(const Rest::Request& request,Http::ResponseWriter response){
         }
     }
 }
+//history
 
 struct Message{
     string id;

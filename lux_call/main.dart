@@ -77,7 +77,17 @@ class AuthScreenState extends State<AuthScreen> {
     );
   }
   void _auth(){
+    final username = username_cont.text;
+    final psw = password_cont.text;
+    if(username.isEmpty || psw.isEmpty){
+      _showMessage("Fill all the blanks");
+    }
 
+  }
+  void _showMessage(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text)),
+    );
   }
 
 

@@ -866,7 +866,7 @@ void delete_from_recent(const Rest::Request& request,Http::ResponseWriter respon
         }
     }
 }
-//write the logs functions
+//FIXME write the logs functions
 void set_user_profile_photo(const Rest::Request request,Http::ResponseWriter response){
     try{
         const auto user_data = json::parse(request.body());
@@ -891,6 +891,7 @@ void set_user_profile_photo(const Rest::Request request,Http::ResponseWriter res
         std::cerr <<  e.what() << endl;
     }
 }
+//FIXME delete_avatar endpoint
 
 
 int main(){

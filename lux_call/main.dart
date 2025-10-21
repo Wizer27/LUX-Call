@@ -22,7 +22,31 @@ class GenerateSiganture {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     return now.toString();
   }
+  String generate_siganture(String data,String timestamp){
+    final message = data + timestamp + secret_key;
+    final key = utf8.encode(secret_key);
+    final bytes = utf8.encode(message);
+    final hmac = Hmac(sha256, key);
+    final digest = hmac.convert(bytes);
+    return digest.toString();
+  }
+  Future<http.Response> test_post({required String endpoint,required Map<String,dynamic> data}) async{
+    final timestamp = TimeStamp();
+    final url = Uri.parse('$BaseUrl$endpoint');
+    final json_data = json.encode(data);
+    final signature = generate_siganture(json_data,timestamp);
+    return await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Signature': signature,
+        'X-Timestamp': timestamp,
+        'X-API-Key': api_key,
+      },
+      body: json_data,
+    );
 
+  }
 }
 void main() {
   runApp(const Main());

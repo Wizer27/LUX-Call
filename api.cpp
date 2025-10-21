@@ -664,7 +664,34 @@ void write_call(const Rest::Request& request,Http::ResponseWriter response){
     }
 }
 
-
+//FIXME write the get user_calls endpoint
+void get_user_history(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Ok,"Invalid siganture");
+    }else{
+        try{
+            bool indf = false;
+            ifstream file(history_calls);if(!file.is_open()) std::cerr << "Error while openign the file" << endl;
+            else{
+                json data;file >> data;file.close();
+                const auto user_data = json::parse(request.body());
+                for(const auto& user:data){
+                    if(user["username"] == user_data["username"]){
+                        indf = true;
+                        response.send(Http::Code::Ok,user["calls"].dump(),MIME(Application,Json));
+                    }
+                }
+            }
+            if(!indf){
+                response.send(Http::Code::Not_Found,"Error user not found");
+            }
+        }catch(exception& e){
+            std::cerr << e.what() << endl;
+            response.send(Http::Code::Bad_Request,e.what());
+        }
+    
+    }
+}
 struct Message{
     string id;
     string author;

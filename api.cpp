@@ -12,6 +12,7 @@
 #include <pistache/router.h>
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
+#include <stdexcept>
 
 
 
@@ -865,6 +866,27 @@ void delete_from_recent(const Rest::Request& request,Http::ResponseWriter respon
             std::cerr << e.what() << endl;
             return;
         }
+    }
+}
+//write the logs functions
+void set_user_profile_photo(const Rest::Request request,Http::ResponseWriter response){
+    try{
+        const auto user_data = json::parse(request.body());
+        ifstream file(prof_photo);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+        else{
+            json pict;file >> pict;file.close();
+            try{
+                pict[user_data["username"]] = user_data["new_photo"];
+                
+            }catch(std::out_of_range& e){
+                std::cerr << "Error user not found" << endl;
+                response.send(Http::Code::Not_Found,"User not found");
+            }
+
+        }
+    }catch(exception& e){
+        response.send(Http::Code::Bad_Request,e.what());
+        std::cerr <<  e.what() << endl;
     }
 }
 

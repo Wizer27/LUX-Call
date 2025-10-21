@@ -4,6 +4,26 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
+
+
+
+
+class GenerateSiganture {
+  final String BaseUrl;
+  final String api_key;
+  final String secret_key;
+
+  GenerateSiganture({
+    required this.BaseUrl,
+    required this.api_key,
+    required this.secret_key,
+  });
+  String TimeStamp(){
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    return now.toString();
+  }
+
+}
 void main() {
   runApp(const Main());
 }

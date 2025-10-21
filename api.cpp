@@ -31,6 +31,7 @@ string chats_file = "/Users/ivan/LUX-Call/data/chats.json";
 string secrets_file = "/Users/ivan/LUX-Call/data/secrets.json";
 string recent_file = "/Users/ivan/LUX-Call/data/recent.json";
 string history_calls = "/Users/ivan/LUX-Call/data/calls_history.json";
+string prof_photo = "/Users/ivan/LUX-Call/data/avatars.json";
 
 
 //random id generator
@@ -190,6 +191,23 @@ void default_calls_history(const string username){
         std::cerr << e.what() << endl;
     }
 }
+void default_profile_photo(string username){
+    try{
+        ifstream file(prof_photo);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+        else{
+            json prof_ph;file >> prof_ph;file.close();
+            prof_ph[username] = NULL;
+            ofstream exit_file(prof_photo);if(!exit_file.is_open()) std::cerr << "Error while writing the data" << endl;
+            else{
+                exit_file << prof_ph.dump(4);exit_file.close();
+            }
+
+        }
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
+        return;
+    }
+}
 void default_contacts(string username){
     ifstream file("/Users/ivan/LUX-Call/data/contacts.json");
     if(!file.is_open()){
@@ -323,6 +341,7 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
                 default_contacts(username);
                 default_recent(username);
                 default_calls_history(username);
+                default_profile_photo(username);
                 response.send(Http::Code::Ok,"Done");
             }
 

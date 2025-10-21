@@ -656,9 +656,7 @@ void write_call(const Rest::Request& request,Http::ResponseWriter response){
                 if(chat["id"] == user_data["chat_id"]){
                     indf = true;
                     json new_call  = {
-                        {"from",user_data["from"]},
-                        {"to",user_data["to"]},
-                        {"date",user_data["date"]},
+                        {"called",user_data["username"]},
                         {"type",user_data["type"]},
                         {"id",generateUUID()}
                     };
@@ -877,7 +875,11 @@ void set_user_profile_photo(const Rest::Request request,Http::ResponseWriter res
             json pict;file >> pict;file.close();
             try{
                 pict[user_data["username"]] = user_data["new_photo"];
-                
+                ofstream exit_file(prof_photo);if(!exit_file.is_open()) std::cerr << "Error while writing" << endl;
+                else{
+                    exit_file << pict.dump(4);exit_file.close();
+                    response.send(Http::Code::Ok,"Done");
+                }
             }catch(std::out_of_range& e){
                 std::cerr << "Error user not found" << endl;
                 response.send(Http::Code::Not_Found,"User not found");

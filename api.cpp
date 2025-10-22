@@ -213,6 +213,7 @@ void default_calls_history(const string username){
         }
     }catch(exception& e){
         std::cerr << e.what() << endl;
+        write_logs(e.what());
     }
 }
 void default_profile_photo(string username){
@@ -229,6 +230,7 @@ void default_profile_photo(string username){
         }
     }catch(exception& e){
         std::cerr << e.what() << endl;
+        write_logs(e.what());
         return;
     }
 }
@@ -272,6 +274,7 @@ void default_recent(string username){
         }
     }catch(exception& e){
         std::cerr << e.what() << endl;
+        write_logs(e.what());
     }
 }
 
@@ -289,6 +292,7 @@ bool is_user_exists(string username){
         }
     }catch(exception& e){
         std::cerr << e.what() << endl;
+        write_logs(e.what());
         return false;
     }
 }
@@ -372,6 +376,7 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
         }
     }catch(exception& e){
         response.send(Http::Code::Bad_Request,"Error");
+        write_logs(e.what());
     }
 }
 void login(const Rest::Request& request,Http::ResponseWriter response){
@@ -393,6 +398,7 @@ void login(const Rest::Request& request,Http::ResponseWriter response){
     }catch(exception& e){
         response.send(Http::Code::Bad_Request,e.what());
         std::cerr << "Exception: " << e.what() << endl;
+        write_logs(e.what());
         return;
     }
 }
@@ -439,6 +445,7 @@ void Create_New_chat(const Rest::Request& request,Http::ResponseWriter response)
         }   
     }catch(exception& e){
         response.send(Http::Code::Bad_Request,"Error");
+        write_logs(e.what());
     }
 }
 void delete_the_chat(const Rest::Request& request,Http::ResponseWriter response){
@@ -469,6 +476,7 @@ void delete_the_chat(const Rest::Request& request,Http::ResponseWriter response)
         }catch(exception& e){
             std::cerr << e.what() << endl;
             response.send(Http::Code::Bad_Request,e.what());
+            write_logs(e.what());
         }
     }
 }
@@ -498,6 +506,7 @@ void get_user_chats(const Rest::Request& request,Http::ResponseWriter response){
         }catch(exception& e){
             std::cerr << "Exception: " << e.what();
             response.send(Http::Code::Bad_Request,e.what());
+            write_logs(e.what());
             return;
         }
     }
@@ -526,6 +535,7 @@ void get_user_contacts(const Rest::Request& request,Http::ResponseWriter respons
         }
     }catch(exception& e){
         response.send(Http::Code::Bad_Request,e.what());
+        write_logs(e.what());
     }
 }
 
@@ -572,6 +582,7 @@ void delete_user_contact(const Rest::Request& request,Http::ResponseWriter respo
             }
         }catch(exception& e){
             response.send(Http::Code::Bad_Request,"Bad request");
+            write_logs(e.what());
         }
     }
 }
@@ -664,6 +675,7 @@ void write_call_to_user(string username,string from,string date){
         }
     }catch(exception& e){
         std::cerr << e.what() << endl;
+        write_logs(e.what());
     }
 }
 void write_call(const Rest::Request& request,Http::ResponseWriter response){
@@ -700,6 +712,7 @@ void write_call(const Rest::Request& request,Http::ResponseWriter response){
         }catch(exception& e){
             std::cerr << e.what() << endl;
             response.send(Http::Code::Bad_Request,e.what());
+            write_logs(e.what());
             return;
         }
     }
@@ -729,6 +742,7 @@ void get_user_history(const Rest::Request& request,Http::ResponseWriter response
         }catch(exception& e){
             std::cerr << e.what() << endl;
             response.send(Http::Code::Bad_Request,e.what());
+            write_logs(e.what());
         }
     
     }
@@ -771,6 +785,7 @@ void delete_message(const Rest::Request& request,Http::ResponseWriter response){
         }
     }catch(exception& e){
         std::cerr << e.what() << endl;
+        write_logs(e.what());
     }
 }
 void get_chat_messages(const Rest::Request& request,Http::ResponseWriter response){
@@ -791,6 +806,7 @@ void get_chat_messages(const Rest::Request& request,Http::ResponseWriter respons
             }
         }catch(exception& e){
             response.send(Http::Code::Bad_Request,"Error");
+            write_logs(e.what());
         }
     }
 }
@@ -819,6 +835,7 @@ void search_users(const Rest::Request& request,Http::ResponseWriter response){
             }
         }catch(exception& e){
             std::cerr << e.what() << endl;
+            write_logs(e.what());
             response.send(Http::Code::Bad_Request,e.what());
         }   
     }
@@ -848,6 +865,7 @@ void write_recent_search_find(const Rest::Request& request,Http::ResponseWriter 
         }catch(exception& e){
             std::cerr << e.what() << endl;
             response.send(Http::Code::Bad_Request,e.what());
+            write_logs(e.what());
             return;
         }
     }
@@ -885,6 +903,7 @@ void delete_from_recent(const Rest::Request& request,Http::ResponseWriter respon
         }catch(exception& e){
             response.send(Http::Code::Bad_Request,e.what());
             std::cerr << e.what() << endl;
+            write_logs(e.what());
             return;
         }
     }
@@ -915,6 +934,7 @@ void set_user_profile_photo(const Rest::Request request,Http::ResponseWriter res
         }catch(exception& e){
             response.send(Http::Code::Bad_Request,e.what());
             std::cerr <<  e.what() << endl;
+            write_logs(e.what());
         }
     }
 }
@@ -934,6 +954,7 @@ void delete_the_user_prof_photo(const Rest::Request& request,Http::ResponseWrite
             }
         }catch(exception& e){
             response.send(Http::Code::Bad_Request,e.what());
+            write_logs(e.what());
         }
     }
 }

@@ -868,31 +868,52 @@ void delete_from_recent(const Rest::Request& request,Http::ResponseWriter respon
 }
 //FIXME write the logs functions
 void set_user_profile_photo(const Rest::Request request,Http::ResponseWriter response){
-    try{
-        const auto user_data = json::parse(request.body());
-        ifstream file(prof_photo);if(!file.is_open()) std::cerr << "Error while opening" << endl;
-        else{
-            json pict;file >> pict;file.close();
-            try{
-                pict[user_data["username"]] = user_data["new_photo"];
-                ofstream exit_file(prof_photo);if(!exit_file.is_open()) std::cerr << "Error while writing" << endl;
-                else{
-                    exit_file << pict.dump(4);exit_file.close();
-                    response.send(Http::Code::Ok,"Done");
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            const auto user_data = json::parse(request.body());
+            ifstream file(prof_photo);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+            else{
+                json pict;file >> pict;file.close();
+                try{
+                    pict[user_data["username"]] = user_data["new_photo"];
+                    ofstream exit_file(prof_photo);if(!exit_file.is_open()) std::cerr << "Error while writing" << endl;
+                    else{
+                        exit_file << pict.dump(4);exit_file.close();
+                        response.send(Http::Code::Ok,"Done");
+                    }
+                }catch(std::out_of_range& e){
+                    std::cerr << "Error user not found" << endl;
+                    response.send(Http::Code::Not_Found,"User not found");
                 }
-            }catch(std::out_of_range& e){
-                std::cerr << "Error user not found" << endl;
-                response.send(Http::Code::Not_Found,"User not found");
-            }
 
+            }
+        }catch(exception& e){
+            response.send(Http::Code::Bad_Request,e.what());
+            std::cerr <<  e.what() << endl;
         }
-    }catch(exception& e){
-        response.send(Http::Code::Bad_Request,e.what());
-        std::cerr <<  e.what() << endl;
     }
 }
 //FIXME delete_avatar endpoint
+void delete_the_user_prof_photo(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            ifstream file(prof_photo);if(!file.is_open()) std::cerr << "Error while opening the file" << endl;
+            else{
+                json pict;file >> pict;file.close();
+                const auto user_data = json::parse(request.body());
+                default_profile_photo(user_data["username"]);
+                response.send(Http::Code::Ok,"Done"); 
 
+            }
+        }catch(exception& e){
+            response.send(Http::Code::Bad_Request,e.what());
+        }
+    }
+}
 
 int main(){
     Http::Endpoint server(Address("*:8080")); 

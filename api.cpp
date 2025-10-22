@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <random>
 #include <algorithm>
+#include <ctime>
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include <pistache/endpoint.h>
@@ -33,6 +34,7 @@ string secrets_file = "/Users/ivan/LUX-Call/data/secrets.json";
 string recent_file = "/Users/ivan/LUX-Call/data/recent.json";
 string history_calls = "/Users/ivan/LUX-Call/data/calls_history.json";
 string prof_photo = "/Users/ivan/LUX-Call/data/avatars.json";
+string logs = "/Users/ivan/LUX-Call/data/logs.json";
 
 
 //random id generator
@@ -120,6 +122,27 @@ public:
         }
     }
 };
+
+void write_logs(string error){
+    try{
+        time_t now = time(0);
+        ifstream file(logs);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+        else{
+            json logs_data;file >> logs_data;file.close();
+            json new_log = {
+                {"time",now},
+                {"error",error}
+            };
+            logs_data.push_back(new_log);
+            ofstream exit_file(logs);if(!exit_file.is_open()) std::cerr << "Error while writing data" << endl;
+            else{
+                exit_file << logs_data.dump(4);exit_file.close();
+            }
+        }
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
+    }
+}
 
 class SignatureMiddleware{
 private:

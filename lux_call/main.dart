@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
 
+// ------- INIT FILE -------
+final secrets = '/Users/ivan/LUX-Call/data/secrets.json';
 
+Future<Map<String,dynamic>> read_json() async{
+  try{
+    final file  = File(secrets);
+    final data = await file.readAsString();
+    return jsonDecode(data) as Map<String, dynamic>;
+  }catch(e){
+    print('Exception $e');
+    return {};
+  }
+}
 
-
-class GenerateSiganture {
+class GenerateSignature {
   final String BaseUrl;
   final String api_key;
   final String secret_key;
 
-  GenerateSiganture({
+  GenerateSignature({
     required this.BaseUrl,
     required this.api_key,
     required this.secret_key,
@@ -48,6 +60,15 @@ class GenerateSiganture {
 
   }
 }
+late GenerateSignature siganture_middleware;
+void init() async {
+  final secrets_data = await read_json();
+  String api_key = secrets_data["api"];
+  String secret_key = secrets_data["key"];
+  siganture_middleware = GenerateSignature(BaseUrl: "http://0.0.0.0:80", api_key: api_key, secret_key: secret_key);
+}
+
+
 void main() {
   runApp(const Main());
 }

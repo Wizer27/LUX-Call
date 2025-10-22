@@ -958,6 +958,51 @@ void delete_the_user_prof_photo(const Rest::Request& request,Http::ResponseWrite
         }
     }
 }
+void get_the_all_logs(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            ifstream file(logs);if(!file.is_open()) std::cerr << "Error file wanst opened" << endl;
+            else{
+                json logs_data;file >> logs_data;file.close();
+                response.send(Http::Code::Ok,logs_data.dump(),MIME(Application,Json));
+            }
+        }catch(exception& e){
+            std::cerr << e.what() << endl;
+            write_logs(e.what());
+            response.send(Http::Code::Bad_Request,e.what());
+        }
+    }
+}
+void get_the_log_seacrh(const Rest::Request& request,Http::ResponseWriter response){
+    if(!siganture_middleware.validate_request(request)){
+        response.send(Http::Code::Forbidden,"Invalid signature");
+    }else{
+        try{
+            const auto data = json::parse(request.body());
+            bool ind = false;
+            ifstream file(logs);if(!file.is_open()) std::cerr << "Error file wanst opened" << endl;
+            else{
+                json log_data;file >> log_data;file.close();
+                for(auto log:log_data){
+                    if(log["time"] == data["time"]){
+                        ind = true;
+                        response.send(Http::Code::Ok,log.dump(),MIME(Application,Json));
+                        return;
+                    }
+                }
+                if(!ind){
+                    response.send(Http::Code::Not_Found,"Error log not found");
+                }
+            }
+        }catch(exception& e){
+            std::cerr << e.what() << endl;
+            response.send(Http::Code::Bad_Request,e.what());
+            write_logs(e.what());
+        }
+    }
+}
 
 int main(){
     Http::Endpoint server(Address("*:8080")); 
@@ -972,6 +1017,8 @@ int main(){
     Routes::Post(router,"/api/login",Routes::bind(login));
     Routes::Post(router,"/api/delete/chat",Routes::bind(delete_the_chat));
     Routes::Post(router,"/api/write/call",Routes::bind(write_call));
+    Routes::Post(router,"/api/get/logs",Routes::bind(get_the_all_logs));
+    Routes::Post(router,"/api/get/cur/log",Routes::bind(get_the_log_seacrh));
     server.init();
     server.setHandler(router.handler());
     server.serve();

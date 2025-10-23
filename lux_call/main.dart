@@ -166,13 +166,18 @@ class AuthScreenState extends State<AuthScreen> {
       ),
     );
   }
-  void _auth(){
+  void _auth() async {
     final username = username_cont.text;
     final psw = password_cont.text;
     if(username.isEmpty || psw.isEmpty){
       _showMessage("Fill all the blanks");
     }
-
+    bool validate = await register(username, psw);
+    if(!validate){
+      _showMessage('Incorrect data');
+    }else{
+      //login
+    }
   }
   void _showMessage(String text) {
     ScaffoldMessenger.of(context).showSnackBar(

@@ -60,14 +60,33 @@ class GenerateSignature {
 
   }
 }
-late GenerateSignature siganture_middleware;
+late GenerateSignature signature_middleware;
 void init() async {
   final secrets_data = await read_json();
   String api_key = secrets_data["api"];
   String secret_key = secrets_data["key"];
-  siganture_middleware = GenerateSignature(BaseUrl: "http://0.0.0.0:8080", api_key: api_key, secret_key: secret_key);
+  signature_middleware = GenerateSignature(BaseUrl: "http://0.0.0.0:8080", api_key: api_key, secret_key: secret_key);
 
   
+}
+Future<bool> register(String username,String password) async {
+  final time = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  final now = time.toString();
+  final url = Uri.parse('http://0.0.0.0:8080/register');
+  dynamic data = {
+    'username':username,
+    'pass' : password
+  };
+  final json_data = json.encode(data);
+  final signature = signature_middleware.generate_siganture(json_data, now);
+  final resp = await http.post(url,headers: {
+        'Content-Type': 'application/json',
+        'X-Signature': signature,
+        'X-Timestamp': now,
+        'X-API-Key': signature_middleware.api_key,
+      },body: json_data);
+  return resp.statusCode == 200;    
+
 }
 
 

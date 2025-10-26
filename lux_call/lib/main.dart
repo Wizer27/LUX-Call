@@ -1,122 +1,189 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
+import 'package:http/http.dart' as http;
 
-void main() {
-  runApp(const MyApp());
+
+// ------- INIT FILE -------
+final secrets = '/Users/ivan/LUX-Call/data/secrets.json';
+
+Future<Map<String,dynamic>> read_json() async{
+  try{
+    final file  = File(secrets);
+    final data = await file.readAsString();
+    return jsonDecode(data) as Map<String, dynamic>;
+  }catch(e){
+    print('Exception $e');
+    return {};
+  }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class GenerateSignature {
+  final String BaseUrl;
+  final String api_key;
+  final String secret_key;
 
-  // This widget is the root of your application.
+  GenerateSignature({
+    required this.BaseUrl,
+    required this.api_key,
+    required this.secret_key,
+  });
+  String TimeStamp(){
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    return now.toString();
+  }
+  String generate_siganture(String data,String timestamp){
+    final message = data + timestamp + secret_key;
+    final key = utf8.encode(secret_key);
+    final bytes = utf8.encode(message);
+    final hmac = Hmac(sha256, key);
+    final digest = hmac.convert(bytes);
+    return digest.toString();
+  }
+  Future<http.Response> test_post({required String endpoint,required Map<String,dynamic> data}) async{
+    final timestamp = TimeStamp();
+    final url = Uri.parse('$BaseUrl$endpoint');
+    final json_data = json.encode(data);
+    final signature = generate_siganture(json_data,timestamp);
+    return await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Signature': signature,
+        'X-Timestamp': timestamp,
+        'X-API-Key': api_key,
+      },
+      body: json_data,
+    );
+
+  }
+}
+late GenerateSignature signature_middleware;
+void init() async {
+  final secrets_data = await read_json();
+  String api_key = secrets_data["api"];
+  String secret_key = secrets_data["key"];
+  signature_middleware = GenerateSignature(BaseUrl: "http://0.0.0.0:8080", api_key: api_key, secret_key: secret_key);
+
+  
+}
+Future<bool> register(String username,String password) async {
+  final time = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  final now = time.toString();
+  final url = Uri.parse('http://0.0.0.0:8080/register');
+  dynamic data = {
+    'username':username,
+    'pass' : password
+  };
+  final json_data = json.encode(data);
+  final signature = signature_middleware.generate_siganture(json_data, now);
+  final resp = await http.post(url,headers: {
+        'Content-Type': 'application/json',
+        'X-Signature': signature,
+        'X-Timestamp': now,
+        'X-API-Key': signature_middleware.api_key,
+      },body: json_data);
+  return resp.statusCode == 200;    
+
+}
+
+
+void main() {
+  runApp(const Main());
+}
+class Main extends StatelessWidget {
+  const Main({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'Lux-Call',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const AuthScreen(), 
     );
   }
 }
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class AuthScreen extends StatefulWidget {
+  const AuthScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<AuthScreen> createState() => AuthScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
+class AuthScreenState extends State<AuthScreen> {
+  final TextEditingController username_cont = TextEditingController();
+  final TextEditingController password_cont = TextEditingController();
+  bool is_login = true;
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      appBar: AppBar(title: Text(is_login ? 'Login' : 'Register')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          children: [
+            // Поле email
+            TextField(
+              controller: username_cont,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Поле пароля
+            TextField(
+              controller: password_cont,
+              obscureText: true, // Скрываем пароль
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Кнопка входа/регистрации
+            ElevatedButton(
+              onPressed: _auth,
+              child: Text(is_login ? 'Login' : 'Register'),
+            ),
+            const SizedBox(height: 10),
+            
+            // Переключение между входом и регистрацией
+            TextButton(
+              onPressed: () => setState(() => is_login = !is_login),
+              child: Text(is_login
+                ? 'Register' 
+                : 'Login'
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+  void _auth() async {
+    final username = username_cont.text;
+    final psw = password_cont.text;
+    if(username.isEmpty || psw.isEmpty){
+      _showMessage("Fill all the blanks");
+    }
+    bool validate = await register(username, psw);
+    if(!validate){
+      _showMessage('Incorrect data');
+    }else{
+      //login
+    }
+  }
+  void _showMessage(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text)),
+    );
+  }
+
+
 }

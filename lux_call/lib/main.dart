@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 
 // ------- INIT FILE -------
@@ -90,7 +91,7 @@ Future<bool> register(String username,String password) async {
 Future<bool> login(String username,String psw)async {
   final time = DateTime.now().millisecondsSinceEpoch ~/ 1000;
   final now = time.toString();
-  final url = Uri.parse('http://0.0.0.0:8080/api/login')
+  final url = Uri.parse('http://0.0.0.0:8080/api/login');
   dynamic data = {
     'username':username,
     'psw':psw
@@ -105,7 +106,13 @@ Future<bool> login(String username,String psw)async {
       },body: json_data);
   return resp.statusCode == 200;
 }
-
+/*
+void _showMessage(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text)),
+    );
+  }
+*/
 
 void main() {
   runApp(const Main());
@@ -117,90 +124,40 @@ class Main extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Lux-Call',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const AuthScreen(), 
-    );
-  }
-}
-class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
-
-  @override
-  State<AuthScreen> createState() => AuthScreenState();
-}
-
-class AuthScreenState extends State<AuthScreen> {
-  final TextEditingController username_cont = TextEditingController();
-  final TextEditingController password_cont = TextEditingController();
-  bool is_login = true;
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(is_login ? 'Login' : 'Register')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Поле email
-            TextField(
-              controller: username_cont,
-              decoration: const InputDecoration(
-                labelText: 'Username',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Поле пароля
-            TextField(
-              controller: password_cont,
-              obscureText: true, // Скрываем пароль
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            
-            // Кнопка входа/регистрации
-            ElevatedButton(
-              onPressed: _auth,
-              child: Text(is_login ? 'Login' : 'Register'),
-            ),
-            const SizedBox(height: 10),
-            
-            // Переключение между входом и регистрацией
-            TextButton(
-              onPressed: () => setState(() => is_login = !is_login),
-              child: Text(is_login
-                ? 'Register' 
-                : 'Login'
-              ),
-            ),
-          ],
-        ),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
       ),
+      routes: {
+        '/': (_) => const SplashScreen(),
+        '/login': (_) => const LoginPage(),
+        '/register': (_) => const RegisterPage(),
+        '/home': (_) => const HomePage(),
+      },
+      initialRoute: '/',
     );
   }
-  void _auth() async {
-    final username = username_cont.text;
-    final psw = password_cont.text;
-    if(username.isEmpty || psw.isEmpty){
-      _showMessage("Fill all the blanks");
-    }
-    bool validate = await register(username, psw);
-    if(!validate){
-      _showMessage('Incorrect data');
-    }else{
-      _showMessage("Success");
-    }
-  }
-  void _showMessage(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text)),
-    );
-  }
+}
 
-
+class SplashScreen extends StatefulWidget{
+  const SplashScreen({super.key});
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+class _SplashScreenState extends State<SplashScreen>{
+  final storage = const FlutterSecureStorage();
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+  Future<void> _check() async {
+    final token = await storage.read(key: 'auth_token');
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed(token == null ? '/login' : '/home');
+  }
+  @override
+  Widget build(BuildContext context) => const Scaffold(
+    body: Center(child: CircularProgressIndicator()),
+  );
 }

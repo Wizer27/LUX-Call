@@ -161,3 +161,13 @@ class _SplashScreenState extends State<SplashScreen>{
     body: Center(child: CircularProgressIndicator()),
   );
 }
+
+class LoginPage extends StatefulWidget{
+  const LoginPage({super.key});
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage>{
+  
+}

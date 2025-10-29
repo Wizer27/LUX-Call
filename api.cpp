@@ -335,6 +335,17 @@ bool delete_data_from_vector(vector<string> main,string del){
         return false;
     }
 }
+bool is_user_exists(string username){
+    try{
+        ifstream file(users_file);if(!file.is_open()) std::cerr << "Error while opening" << endl;
+        else{
+            json users;file >> users;file.close();
+            return users.contains(username);
+        }
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
+    }
+}
 void register_new_user(const Rest::Request& request,Http::ResponseWriter response){
     if(!siganture_middleware.validate_request(request)){
         response.send(Http::Code::Forbidden,"Invalid signature");
@@ -356,23 +367,26 @@ void register_new_user(const Rest::Request& request,Http::ResponseWriter respons
             json data;
             file >> data;
             file.close();
-            data[username] = hash_pasw;
-            ofstream exit_file("/Users/ivan/LUX-Call/data/users.json");
-            if(!exit_file.is_open()){
-                response.send(Http::Code::Bad_Request,"Error while writing data");
-                std::cerr << "Error 1" << endl;
+            if(is_user_exists(username)){
+                response.send(Http::Code::Bad_Request,"This username is already taken");
+            }else{
+                data[username] = hash_pasw;
+                ofstream exit_file("/Users/ivan/LUX-Call/data/users.json");
+                if(!exit_file.is_open()){
+                    response.send(Http::Code::Bad_Request,"Error while writing data");
+                    std::cerr << "Error 1" << endl;
+                }
+                else{
+                    exit_file << data.dump(4);
+                    exit_file.close();
+                    //default user data
+                    default_contacts(username);
+                    default_recent(username);
+                    default_calls_history(username);
+                    default_profile_photo(username);
+                    response.send(Http::Code::Ok,"Done");
+                }
             }
-            else{
-                exit_file << data.dump(4);
-                exit_file.close();
-                //default user data
-                default_contacts(username);
-                default_recent(username);
-                default_calls_history(username);
-                default_profile_photo(username);
-                response.send(Http::Code::Ok,"Done");
-            }
-
         }
     }catch(exception& e){
         response.send(Http::Code::Bad_Request,"Error");

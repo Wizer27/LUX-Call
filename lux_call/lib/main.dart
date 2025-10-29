@@ -129,7 +129,7 @@ class AuthScreenState extends State<AuthScreen> {
             TextField(
               controller: username_cont,
               decoration: const InputDecoration(
-                labelText: 'Email',
+                labelText: 'Username',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -176,7 +176,7 @@ class AuthScreenState extends State<AuthScreen> {
     if(!validate){
       _showMessage('Incorrect data');
     }else{
-      //login
+      _showMessage("Success");
     }
   }
   void _showMessage(String text) {

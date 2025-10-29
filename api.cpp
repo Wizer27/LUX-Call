@@ -1023,6 +1023,7 @@ int main(){
     Rest::Router router;
     Routes::Get(router, "/api/data", Routes::bind(get_main));
     Routes::Post(router, "/api/register", Routes::bind(register_new_user));
+    Routes::Post(router,"/api/login",Routes::bind(login));
     Routes::Post(router,"/api/create_new_chat",Routes::bind(Create_New_chat));
     Routes::Post(router,"/api/send/message",Routes::bind(write_the_message));
     Routes::Post(router,"/api/get/chat/messages",Routes::bind(get_chat_messages));

@@ -72,10 +72,10 @@ void init() async {
 Future<bool> register(String username,String password) async {
   final time = DateTime.now().millisecondsSinceEpoch ~/ 1000;
   final now = time.toString();
-  final url = Uri.parse('http://0.0.0.0:8080/register');
+  final url = Uri.parse('http://0.0.0.0:8080/api/register');
   dynamic data = {
     'username':username,
-    'pass' : password
+    'password' : password
   };
   final json_data = json.encode(data);
   final signature = signature_middleware.generate_siganture(json_data, now);
@@ -86,7 +86,24 @@ Future<bool> register(String username,String password) async {
         'X-API-Key': signature_middleware.api_key,
       },body: json_data);
   return resp.statusCode == 200;    
-
+}
+Future<bool> login(String username,String psw)async {
+  final time = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  final now = time.toString();
+  final url = Uri.parse('http://0.0.0.0:8080/api/login')
+  dynamic data = {
+    'username':username,
+    'psw':psw
+  };
+  final json_data = json.encode(data);
+  final signature = signature_middleware.generate_siganture(json_data, now);
+  final resp = await http.post(url,headers: {
+        'Content-Type': 'application/json',
+        'X-Signature': signature,
+        'X-Timestamp': now,
+        'X-API-Key': signature_middleware.api_key,
+      },body: json_data);
+  return resp.statusCode == 200;
 }
 
 

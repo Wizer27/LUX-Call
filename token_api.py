@@ -18,6 +18,15 @@ import redis
 #---- INIT ----
 users_file = "data/users.json"
 refresh_file = "data/sessions.json"
+prof_file = "data/avatars.json"
+
+
+def write_default_avatar(username:str):
+    with open(prof_file,"r") as file:
+        data = json.load(file)
+    data[username] = "None"
+    with open(prof_file,"w") as file:
+        json.dump(data,file)
 
 
 
@@ -42,8 +51,8 @@ def find_refresh_token(token:str):
         if user["token"] == token:
             return user
     return -1        
-def verify_signature(data: dict, received_signature: str) -> bool:
-    if time.time() - data.get('timestamp', 0) > 300:
+def verify_signature(data: dict, received_signature: str,timestamp:str ) -> bool:
+    if time.time() - int(timestamp) > 300:
         return False
     
     
@@ -132,6 +141,7 @@ async def register(request:Register):
             data[request.username] = request.psw
             with open(users_file,"w") as file:
                 json.dump(data,file)  
+            write_default_avatar(request.username)    
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}") 
 @app.post("/login")
@@ -223,3 +233,21 @@ async def logout(request:Refresh,authorization:str = Header(...)):
             raise HTTPException(status_code = 403,detail = "Invalid token")    
     else:
         raise HTTPException(status_code = 404,detail  = "Token not found")    
+class WriteAvavtar(BaseModel):
+    username:str
+    prof_photo:str
+@app.post("/write/avatar") 
+async def write_avatar(req:WriteAvavtar,authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not check_autorizations(authorization):
+        raise HTTPException(status_code = 401,detail = "Authorization error")
+    if not verify_signature(req,x_signature,x_timestamp):
+        raise HTTPException(status_code=403,detail = "Invalid signature")
+    with open(prof_file,"r") as file:
+        data = json.load(file)
+    if not data.get(req.username):
+        raise HTTPException(status_code=404,detail = "User not found")
+    else:
+        data[req.username] = req.prof_photo
+        with open(prof_file,"w") as file:
+            json.dump(data,file)       
+       

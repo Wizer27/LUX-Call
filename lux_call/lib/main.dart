@@ -138,36 +138,120 @@ class Main extends StatelessWidget {
     );
   }
 }
-
-class SplashScreen extends StatefulWidget{
-  const SplashScreen({super.key});
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-class _SplashScreenState extends State<SplashScreen>{
-  final storage = const FlutterSecureStorage();
-  @override
-  void initState() {
-    super.initState();
-    _check();
+class TokenStorage {
+  static const _s = FlutterSecureStorage();
+  static Future<void> save(String access, String refresh) async {
+    await _s.write(key: 'access', value: access);
+    await _s.write(key: 'refresh', value: refresh);
   }
-  Future<void> _check() async {
-    final token = await storage.read(key: 'auth_token');
-    if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed(token == null ? '/login' : '/home');
+  static Future<String?> get access async => _s.read(key: 'access');
+  static Future<String?> get refresh async => _s.read(key: 'refresh');
+  static Future<void> clear() async {
+    await _s.delete(key: 'access');
+    await _s.delete(key: 'refresh');
   }
-  @override
-  Widget build(BuildContext context) => const Scaffold(
-    body: Center(child: CircularProgressIndicator()),
-  );
 }
 
-class LoginPage extends StatefulWidget{
-  const LoginPage({super.key});
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
+class HmacAuthClient extends http.BaseClient {
+  HmacAuthClient({
+    required this.baseUrl,
+    required this.apiKey,
+    required this.secretKey,
+  });
 
-class _LoginPageState extends State<LoginPage>{
-  
+  final String baseUrl;
+  final String apiKey;
+  final String secretKey;
+  final http.Client _inner = http.Client();
+
+  String _ts() => (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
+
+  String _sign(String jsonData, String ts) {
+    final message = jsonData + ts + secretKey;
+    final hmacSha256 = Hmac(sha256, utf8.encode(secretKey));
+    return hmacSha256.convert(utf8.encode(message)).toString();
+  }
+
+  Future<http.StreamedResponse> _sendOnce(http.BaseRequest req, {String bodyForSign = ''}) async {
+    // baseUrl для относительных путей
+    if (!req.url.isAbsolute) {
+      req.url = Uri.parse('$baseUrl${req.url.path}');
+    }
+
+    final access = await TokenStorage.access;
+    final ts = _ts();
+    final sig = _sign(bodyForSign, ts);
+
+    req.headers.addAll({
+      'Content-Type': 'application/json',
+      'X-API-Key': apiKey,
+      'X-Timestamp': ts,
+      'X-Signature': sig,
+      if (access != null) 'Authorization': 'Bearer $access',
+    });
+
+    return _inner.send(req);
+  }
+
+  Future<http.StreamedResponse> _sendWithRefresh(http.BaseRequest req, {String bodyForSign = ''}) async {
+    var res = await _sendOnce(req, bodyForSign: bodyForSign);
+    if (res.statusCode != 401) return res;
+
+    // пробуем refresh
+    final refresh = await TokenStorage.refresh;
+    if (refresh == null) return res;
+
+    final r = http.Request('POST', Uri.parse('$baseUrl/refresh'));
+    final body = jsonEncode({'token': refresh});
+    // ручная подпись для refresh
+    final ts = _ts();
+    final sig = _sign(body, ts);
+    r.headers.addAll({
+      'Content-Type': 'application/json',
+      'X-API-Key': apiKey,
+      'X-Timestamp': ts,
+      'X-Signature': sig,
+    });
+    r.body = body;
+
+    final rResp = await _inner.send(r);
+    final rFull = await http.Response.fromStream(rResp);
+
+    if (rFull.statusCode >= 200 && rFull.statusCode < 300) {
+      final map = jsonDecode(rFull.body) as Map<String, dynamic>;
+      final newAccess = map['access_token'] as String?;
+      final newRefresh = map['refresh_token'] as String?;
+      if (newAccess != null && newRefresh != null) {
+        await TokenStorage.save(newAccess, newRefresh);
+        // пересобрать исходный запрос
+        final rebuilt = http.Request(req.method, req.url);
+        rebuilt.headers.addAll(req.headers);
+        if (req is http.Request) {
+          rebuilt.body = (req.body);
+        }
+        return _sendOnce(rebuilt, bodyForSign: bodyForSign);
+      }
+    }
+
+    return res; // refresh не удался
+  }
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    final bodyForSign = request is http.Request ? request.body : '';
+    return _sendWithRefresh(request, bodyForSign: bodyForSign);
+  }
+
+  // Удобные хелперы:
+  Future<http.Response> getJson(String path) async {
+    final req = http.Request('GET', Uri.parse(path));
+    final s = await send(req);
+    return http.Response.fromStream(s);
+    }
+  Future<http.Response> postJson(String path, Map<String, dynamic> data) async {
+    final req = http.Request('POST', Uri.parse(path));
+    req.body = jsonEncode(data);
+    final s = await send(req);
+    return http.Response.fromStream(s);
+  }
 }

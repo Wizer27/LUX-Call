@@ -8,7 +8,7 @@ import hmac
 import uuid
 import hashlib
 import uvicorn
-from jose import JWTError,jwt
+from jose import JWTError,jwt,ExpiredSignatureError
 from datetime import datetime,timedelta
 import redis
 
@@ -52,14 +52,14 @@ def verify_signature(data: dict, received_signature: str) -> bool:
     
     data_str = json.dumps(data_to_verify, sort_keys=True, separators=(',', ':'))
     expected_signature = hmac.new(get_siganture_key().encode(), data_str.encode(), hashlib.sha256).hexdigest()
-    
+    return hmac.compare_digest(received_signature,expected_signature)
 
 def create_access_token(username:str) -> str:
     payload = {
         "sub":username,
         "exp":int((datetime.utcnow() + timedelta(minutes=15)).timestamp())
     }
-    return jwt.encode(payload,get_secret,algorithm="HS256")
+    return jwt.encode(payload,get_secret(),algorithm="HS256")
 
 
 def create_refresh_token(username:str) ->str:
@@ -70,7 +70,7 @@ def create_refresh_token(username:str) ->str:
     return token
 
 
-def delete_refresh_token(token:str) -> bool:
+def delete_refresh_token(token:str):
     try:
         with open(refresh_file,"r") as file:
             data = json.load(file)
@@ -103,6 +103,7 @@ def is_user_exists(username:str,data) -> bool:
     keys = []
     for key in data.keys():
         keys.append(key)
+    keys = sorted(keys)    
     while l <= r:
         mid = (l + r) // 2
         if keys[mid] == username:
@@ -117,7 +118,7 @@ class Register(BaseModel):
     username:str
     psw:str
     signature:str
-    timestamp:str
+    timestamp:float = Field(default_factory=time.time)
 @app.post("/register")
 async def register(request:Register):   
     if not verify_signature(request.model_dump(),request.signature):
@@ -146,9 +147,9 @@ async def login(request:Register):
                 raise HTTPException(status_code = 404,detail = "Error user not found")
             else:
                 if data[request.username] == request.psw:
-                    token = create_acces_token(request.username)
+                    token = create_access_token(request.username)
                     return {
-                        "acces_token":token,
+                        "access_stoken":token,
                         "refresh_token":create_refresh_token(request.username),
                         "token_type":"bearer"
                     }
@@ -161,26 +162,34 @@ async def check_jwt_token(token:str = Depends(oauth2_scheme)):
     try:
         with open(users_file,"r") as file:
             data = json.load(file)
-        payload = jwt.decode(token,get_secret(),algorithm="HS256")
-        username = payload.get("username")
+        payload = jwt.decode(token,get_secret(),algorithms=["HS256"])
+        username = payload.get("sub")
         if username is None or not is_user_exists(username,data):
             raise HTTPException(status_code=401,detail = "Invalid token")
     except JWTError:
         raise HTTPException(status_code = 401,details = "Invalid token")  
 def check_autorizations(authorizations:str) -> bool:
-    sheme,token = authorizations.split()
-    if sheme.lower()  != "bearer":
+    try:
+        sheme,token = authorizations.split()
+        if sheme.lower() != "bearer":
+            return False
+        payload = jwt.decode(token,get_secret(),algorithms=["HS256"])
+        if not payload.get("sub"):
+            return False
+        return True
+    except ExpiredSignatureError:
+        print("Token excpired")
         return False
-    payload = jwt.decode(token,get_secret(),algorithms = "HS256")
-    if not payload.get("sub"):
+    except (ValueError,JWTError):
+        print("Value and Jwt errors")
         return False
-    return True
+    
 class Refresh(BaseModel):
     token:str          
 @app.post("/refresh")    
 async def refresh(request:Refresh):
     try:
-        payload = jwt.decode(request.token,get_secret(),algorithms="HS256")
+        payload = jwt.decode(request.token,get_secret(),algorithms=["HS256"])
         if payload.get("typ") != "refresh":
             raise HTTPException(status_code = 401,detail = "Invalid token type")
         find_t = find_refresh_token(request.token)
@@ -200,3 +209,17 @@ async def refresh(request:Refresh):
         }
     except JWTError:
         raise HTTPException(status_code = 401,detail = "Invalid jwt token")
+@app.post("/logout")
+async def logout(request:Refresh,authorization:str = Header(...)):
+    if not check_autorizations(authorization):
+        raise HTTPException(status_code = 401,detail = "Authorization error")
+    payload = jwt.decode(request.token,get_secret(),algorithms=["HS256"])
+    username = payload.get("sub")
+    token_find = find_refresh_token(request.token)
+    if token_find != -1:
+        if token_find["username"] == username:
+            delete_refresh_token(request.token)
+        else:
+            raise HTTPException(status_code = 403,detail = "Invalid token")    
+    else:
+        raise HTTPException(status_code = 404,detail  = "Token not found")    

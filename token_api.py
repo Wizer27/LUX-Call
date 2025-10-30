@@ -35,7 +35,7 @@ def add_refesh(token:str,exp:int,username:str):
     })    
     with open(refresh_file,"w") as file:
         json.dump(data,file)
-def find(token:str):
+def find_refresh_token(token:str):
     with open(refresh_file,"r") as file:
         data = json.load(file)
     for user in data:
@@ -54,7 +54,7 @@ def verify_signature(data: dict, received_signature: str) -> bool:
     expected_signature = hmac.new(get_siganture_key().encode(), data_str.encode(), hashlib.sha256).hexdigest()
     
 
-def create_acces_token(username:str) -> str:
+def create_access_token(username:str) -> str:
     payload = {
         "sub":username,
         "exp":int((datetime.utcnow() + timedelta(minutes=15)).timestamp())
@@ -149,7 +149,8 @@ async def login(request:Register):
                     token = create_acces_token(request.username)
                     return {
                         "acces_token":token,
-                        "refresh_token":create_refresh_token(request.username)
+                        "refresh_token":create_refresh_token(request.username),
+                        "token_type":"bearer"
                     }
                 else:
                     raise HTTPException(status_code = 403,detail = "Wrong password or username")     
@@ -165,4 +166,37 @@ async def check_jwt_token(token:str = Depends(oauth2_scheme)):
         if username is None or not is_user_exists(username,data):
             raise HTTPException(status_code=401,detail = "Invalid token")
     except JWTError:
-        raise HTTPException(status_code = 401,details = "Invalid token")        
+        raise HTTPException(status_code = 401,details = "Invalid token")  
+def check_autorizations(authorizations:str) -> bool:
+    sheme,token = authorizations.split()
+    if sheme.lower()  != "bearer":
+        return False
+    payload = jwt.decode(token,get_secret(),algorithms = "HS256")
+    if not payload.get("sub"):
+        return False
+    return True
+class Refresh(BaseModel):
+    token:str          
+@app.post("/refresh")    
+async def refresh(request:Refresh):
+    try:
+        payload = jwt.decode(request.token,get_secret(),algorithms="HS256")
+        if payload.get("typ") != "refresh":
+            raise HTTPException(status_code = 401,detail = "Invalid token type")
+        find_t = find_refresh_token(request.token)
+        if find_t == -1:
+            raise HTTPException(status_code = 404,detail = "Refresh token not found")
+        elif datetime.utcnow().timestamp() > find_t["exp"]:
+            delete_refresh_token(request.token)
+            raise HTTPException(status_code = 401,detail = "Expired")
+        username = find_t["username"]
+        delete_refresh_token(request.token)
+        new_access = create_access_token(username)
+        new_refr = create_refresh_token(username)
+        return {
+            "access_token":new_access,
+            "refresh_token":new_refr,
+            "token_type":"bearer"
+        }
+    except JWTError:
+        raise HTTPException(status_code = 401,detail = "Invalid jwt token")

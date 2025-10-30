@@ -1,4 +1,4 @@
-from fastapi import FastAPI,HTTPException,Depends
+from fastapi import FastAPI,HTTPException,Depends,Header,Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel,Field
 from secrets import compare_digest
@@ -10,6 +10,7 @@ import hashlib
 import uvicorn
 from jose import JWTError,jwt
 from datetime import datetime,timedelta
+import redis
 
 
 
@@ -36,6 +37,12 @@ def verify_signature(data: dict, received_signature: str) -> bool:
     expected_signature = hmac.new(get_siganture_key().encode(), data_str.encode(), hashlib.sha256).hexdigest()
     
 
+def create_acces_token(username:str) -> str:
+    payload = {
+        "sub":username,
+        "exp":int((datetime.utcnow() + timedelta(minutes=15)).timestamp())
+    }
+    return jwt.encode(payload,get_secret,algorithm="HS256")
 
 
 def get_secret() -> str:
@@ -99,11 +106,7 @@ async def login(request:Register):
                 raise HTTPException(status_code = 404,detail = "Error user not found")
             else:
                 if data[request.username] == request.psw:
-                    payload = {
-                        "username":request.username,
-                        "exp":int(time.time) + 360000
-                    }
-                    token =  jwt.encode(payload,get_secret(),algorithm="HS256")
+                    token = create_acces_token(request.username)
                     return token
                 else:
                     raise HTTPException(status_code = 403,detail = "Wrong password or username")     

@@ -17,6 +17,7 @@ import redis
 
 #---- INIT ----
 users_file = "data/users.json"
+refresh_file = "data/sessions.json"
 
 
 
@@ -24,7 +25,23 @@ def get_siganture_key() -> str:
     with open("secrets.json","r") as file:
         data = json.load(file)
     return data["sign"]    
-
+def add_refesh(token:str,exp:int,username:str):
+    with open(refresh_file,"r") as file:
+        data = json.load(file)
+    data.append({
+        "username":username,
+        "token":token,
+        "exp":exp
+    })    
+    with open(refresh_file,"w") as file:
+        json.dump(data,file)
+def find(token:str):
+    with open(refresh_file,"r") as file:
+        data = json.load(file)
+    for user in data:
+        if user["token"] == token:
+            return user
+    return -1        
 def verify_signature(data: dict, received_signature: str) -> bool:
     if time.time() - data.get('timestamp', 0) > 300:
         return False
@@ -43,6 +60,29 @@ def create_acces_token(username:str) -> str:
         "exp":int((datetime.utcnow() + timedelta(minutes=15)).timestamp())
     }
     return jwt.encode(payload,get_secret,algorithm="HS256")
+
+
+def create_refresh_token(username:str) ->str:
+    exp =  int((datetime.utcnow() + timedelta(days=30)).timestamp())
+    payload = {"sub": username, "exp": exp, "typ": "refresh"}
+    token = jwt.encode(payload,get_secret(),algorithm="HS256")
+    add_refesh(token,exp,username)
+    return token
+
+
+def delete_refresh_token(token:str) -> bool:
+    try:
+        with open(refresh_file,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["token"] == token:
+                ind = data.index(user)
+                data.pop(ind)
+                with open(refresh_file,"w") as file:
+                    json.dump(data,file)
+    except Exception as e:
+        print(f"Error : {e}")
+        return
 
 
 def get_secret() -> str:
@@ -107,7 +147,10 @@ async def login(request:Register):
             else:
                 if data[request.username] == request.psw:
                     token = create_acces_token(request.username)
-                    return token
+                    return {
+                        "acces_token":token,
+                        "refresh_token":create_refresh_token(request.username)
+                    }
                 else:
                     raise HTTPException(status_code = 403,detail = "Wrong password or username")     
                  

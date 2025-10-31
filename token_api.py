@@ -298,6 +298,28 @@ async def clear_the_chat(req:ClearTheChat,authorizations:str  = Header(...),x_si
             raise HTTPException(status_code = 400,detail = "Chat not found")            
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+#--- user profie --- 
+
+
+
+class GetUserAvatar(BaseModel):
+    username:str
+@app.post("/get/user_profile")
+async def get_user_profile(req:GetUserAvatar,authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not check_autorizations(authorization):
+        raise HTTPException(status_code = 401,detail = "Authorization error")
+    if not verify_signature(req,x_signature,x_timestamp):
+        raise HTTPException(status_code = 403,detail = "Invalid signature")    
+    try:
+        with open(prof_file,"r") as file:
+            data = json.load(file)
+        if not is_user_exists(req.username):
+            raise HTTPException(status_code = 404,detail = "User not found") 
+        else:
+            return data[req.username]
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
+
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

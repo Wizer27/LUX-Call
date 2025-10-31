@@ -19,7 +19,7 @@ import redis
 users_file = "data/users.json"
 refresh_file = "data/sessions.json"
 prof_file = "data/avatars.json"
-
+chats_file = "data/chats.json"
 
 def write_default_avatar(username:str):
     with open(prof_file,"r") as file:
@@ -251,3 +251,29 @@ async def write_avatar(req:WriteAvavtar,authorization:str = Header(...),x_signat
         with open(prof_file,"w") as file:
             json.dump(data,file)       
        
+class CreateNewChat(BaseModel):
+    user1:str
+    user2:str
+@app.post("/create/newchat")
+async def create_new_chat(req:CreateNewChat,authorization:str = Header(...),x_siganture:str = Header(...),x_timestamp:str = Header(...)):
+    if not check_autorizations(authorization):
+        raise HTTPException(status_code = 401,detail = "Authorization error")
+    if not verify_signature(req,x_siganture,x_timestamp):
+        raise HTTPException(status_code = 403,detail = "Invalid signature")
+    try:
+        ind = False
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for chat in data:
+            if len(chat["users"]) == 0 and len(chat["messages"]) == 0:
+                chat["users"].append(req.user1)
+                chat["users"].append(req.user2)
+                ind = True
+                with open(chats_file,"w") as file:
+                    json.dump(data,file)
+        if not ind:
+            raise HTTPException(status_code =  400,detail = "Error chats not found")            
+
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail= f"Error : {e}")
+    

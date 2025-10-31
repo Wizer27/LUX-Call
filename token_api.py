@@ -255,10 +255,10 @@ class CreateNewChat(BaseModel):
     user1:str
     user2:str
 @app.post("/create/newchat")
-async def create_new_chat(req:CreateNewChat,authorization:str = Header(...),x_siganture:str = Header(...),x_timestamp:str = Header(...)):
+async def create_new_chat(req:CreateNewChat,authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(authorization):
         raise HTTPException(status_code = 401,detail = "Authorization error")
-    if not verify_signature(req,x_siganture,x_timestamp):
+    if not verify_signature(req,x_signature,x_timestamp):
         raise HTTPException(status_code = 403,detail = "Invalid signature")
     try:
         ind = False
@@ -276,4 +276,28 @@ async def create_new_chat(req:CreateNewChat,authorization:str = Header(...),x_si
 
     except Exception as e:
         raise HTTPException(status_code = 400,detail= f"Error : {e}")
-    
+class ClearTheChat(BaseModel):
+    chat_id:str
+@app.post("/clear/chat")
+async def clear_the_chat(req:ClearTheChat,authorizations:str  = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not check_autorizations(authorizations):
+        raise HTTPException(status_code = 401,detail = "Authorization error")
+    if not verify_signature(req,x_signature,x_timestamp):
+        raise HTTPException(status_code = 403,detail = "Invalid signature")
+    try:
+        ind = False
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for chat in data:
+            if chat["id"] == req.chat_id:
+                chat["messages"] = []
+                with open(chats_file,"w") as file:
+                    json.dump(data,file)
+                ind = True    
+        if not ind:
+            raise HTTPException(status_code = 400,detail = "Chat not found")            
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
+#---- RUN ----
+def run_api():
+    uvicorn.run(app,host = "0.0.0.0",port = 8080)

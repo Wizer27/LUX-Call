@@ -28,11 +28,22 @@ def write_default_avatar(username:str):
     data[username] = "None"
     with open(prof_file,"w") as file:
         json.dump(data,file)
+def get_api_key() -> str:
+    with open("data/secrets.json","r") as file:
+        data = json.load(file)
+    return data["api_get"]
+#safe get request
+async def safe_get(req:Request):
+    try:
+        api = req.headers.get("X-API-KEY")
+        if not api or not compare_digest(api,get_api_key()):
+            raise HTTPException(status_code = 401,detail = "Invalid api key")
 
-
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
 def get_siganture_key() -> str:
-    with open("secrets.json","r") as file:
+    with open("data/secrets.json","r") as file:
         data = json.load(file)
     return data["sign"]    
 def add_refesh(token:str,exp:int,username:str):
@@ -428,6 +439,11 @@ async def get_user_chats(req:GetUserChats,x_authorization:str = Header(...),x_si
         return result
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+
+@app.get("/search/{username}",dependencies = [Depends(safe_get)])
+async def search(username:str):
+    pass
+
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

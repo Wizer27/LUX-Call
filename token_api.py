@@ -11,6 +11,7 @@ import uvicorn
 from jose import JWTError,jwt,ExpiredSignatureError
 from datetime import datetime,timedelta
 import redis
+from typing import List
 
 
 
@@ -319,7 +320,39 @@ async def get_user_profile(req:GetUserAvatar,authorization:str = Header(...),x_s
             return data[req.username]
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
-
+class WriteMessage(BaseModel):
+    username:str
+    chat_id:str
+    message:str
+    files:List[str]
+@app.post("/write/message")
+async def write_message(request:WriteMessage,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not check_autorizations(x_authorization):
+        raise HTTPException(status_code = 401,detail = "Authorization error")
+    if not verify_signature(request,x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        ind = False
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for chat in data:
+            if chat["id"] == request.chat_id:
+                chat["messages"].append(
+                    {
+                        "username":request.username,
+                        "message":request.message,
+                        "files":request.files,
+                        "id":str(uuid.uuid4()),
+                        "time":datetime.now()
+                    }
+                )
+                with open(chats_file,"w") as file:
+                    data = json.load(file)
+                ind = True
+        if not ind:
+            raise HTTPException(status_code = 404,detail = "Chat not found")
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

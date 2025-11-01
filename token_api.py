@@ -353,6 +353,32 @@ async def write_message(request:WriteMessage,x_authorization:str = Header(...),x
             raise HTTPException(status_code = 404,detail = "Chat not found")
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+class DeleteThemessage(BaseModel):
+    chat_id:str
+    message_id:str
+@app.post("/delete/message")
+async def delete_message(req:DeleteThemessage,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not check_autorizations(x_authorization):
+        raise HTTPException(status_code = 401,detail = "Authorization error")
+    if not verify_signature(req,x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        indificator = False
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for chat in data:
+            if chat["id"]:
+                for message in chat["messages"]:
+                    if message["id"] == req.message_id:
+                        ind = chat["messages"].index(message)
+                        chat["messages"].pop(ind)
+                        with open(chats_file,"w") as file:
+                            json.dump(data,file)
+                        indificator = True
+        if not indificator:
+            raise HTTPException(status_code = 404,detail = "Chat or message not found")
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

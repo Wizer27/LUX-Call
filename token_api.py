@@ -396,6 +396,38 @@ async def get_chat_messages(req:GetChatMessages,x_authorization:str = Header(...
         raise HTTPException(status_code = 404,detail = "Chat not found")
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+def get_except(username:str,data) -> str:
+    if len(data) != 2:
+        raise ValueError
+    for i in data:
+        if i != username:
+            return i
+
+class GetUserChats(BaseModel):
+    username:str
+@app.post("/get/user/chats")
+async def get_user_chats(req:GetUserChats,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not check_autorizations(x_authorization):
+        raise HTTPException(status_code = 401,detail = "Authorization error")
+    if not verify_signature(req,x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        if not is_user_exists(req.username):
+            raise HTTPException(status_code = 404,detail = "User not found")
+        result = [] #{"username":"test","last_message":"some message"}
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+
+        for chat in data:
+            if req.username in chat["users"]:
+                second_user = get_except(req.username,data["users"])
+                result.append({
+                    "username":second_user,
+                    "last_message": chat["messages"][-1]
+                })
+        return result
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

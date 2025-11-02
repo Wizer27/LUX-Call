@@ -11,7 +11,37 @@ import uvicorn
 from jose import JWTError,jwt,ExpiredSignatureError
 from datetime import datetime,timedelta
 import redis
-from typing import List
+from typing import List, Optional, Tuple
+
+
+
+
+class RedisClient():
+    def __init__(self,base_url:str):
+        self.base_url = base_url
+        self.redis = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+    def check_connection(self) -> bool:
+        return self.redis.ping()
+    def write_login(self,username:str,password:str) -> bool:
+        if self.redis.exists(username):
+            return False
+        self.redis.set(username,password)
+        return True
+    def login(self,username:str,psw:str): #hash password
+       value = self.redis.get(username)
+       return value == psw
+    def ludice_balance_logic(self,username:str) -> bool:#create balance
+        test = self.redis.get(username)
+        if test:
+            return False
+        else:
+            self.redis.hset(username,mapping = {"balance":0})
+            return True
+    def withdarw(self,username:str,amount:int):
+        pass
+
+
+
 
 
 

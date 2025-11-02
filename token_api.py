@@ -31,18 +31,33 @@ class RedisClient():
        value = self.redis.get(username)
        return value == psw
     def ludice_balance_logic(self,username:str) -> bool:#create balance
-        test = self.redis.get(username)
-        if test:
-            return False
+        if self.redis.exists(username):
+            raise LookupError("User already exists")
         else:
             self.redis.hset(username,mapping = {"balance":0})
             return True
-    def withdarw(self,username:str,amount:int):
-        pass
-
-
-
-
+    def withdarw(self,username:str,amount:int) -> bool:
+        user_balance = self.redis.hget(username,"balance")
+        if user_balance is None:
+            return False
+        user_balance = int(user_balance)
+        if user_balance < amount:
+            raise ValueError("User doest have this much money")
+        else:
+            self.redis.hincrby(username,"balance",-amount)
+            return True
+    def increase(self,username:str,amount:int) -> bool:
+        user_balance = self.redis.hget(username,"balance")
+        if not user_balance:
+            return False
+       self.redis.hincrby(username,"balance",amount)
+       return True
+    def get_user_balane(self,username:str) -> int:
+        user_balance = self.redis.hget(username,"balance")
+        if user_balance is None:
+            raise LookupError("User not found")
+        else:
+            return int(user_balance)
 
 
 
@@ -471,7 +486,13 @@ async def get_user_chats(req:GetUserChats,x_authorization:str = Header(...),x_si
 @app.get("/search/{username}",dependencies = [Depends(safe_get)])
 async def search(username:str):
     try:
-        pass
+        with open(users_file,"r") as file:
+            data = json.load(file)
+        users = data.keys()
+        result = []
+        for user in users:
+            if user.lower() in username.lower() or username.lower() in user.lower():
+                result.append(user)
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 

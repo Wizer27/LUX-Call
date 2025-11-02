@@ -50,8 +50,8 @@ class RedisClient():
         user_balance = self.redis.hget(username,"balance")
         if not user_balance:
             return False
-       self.redis.hincrby(username,"balance",amount)
-       return True
+        self.redis.hincrby(username,"balance",amount)
+        return True
     def get_user_balane(self,username:str) -> int:
         user_balance = self.redis.hget(username,"balance")
         if user_balance is None:

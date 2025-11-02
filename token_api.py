@@ -138,11 +138,9 @@ def is_user_exists(username:str,data) -> bool:
 class Register(BaseModel):
     username:str
     psw:str
-    signature:str
-    timestamp:float = Field(default_factory=time.time)
 @app.post("/register")
-async def register(request:Register):   
-    if not verify_signature(request.model_dump(),request.signature):
+async def register(request:Register,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(request.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
         with open(users_file,"r") as file:
@@ -157,8 +155,8 @@ async def register(request:Register):
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}") 
 @app.post("/login")
-async def login(request:Register):
-    if not verify_signature(request.model_dump(),request.signature):
+async def login(request:Register,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(request.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail =  'Invalid signature') 
     else:
         try:
@@ -252,7 +250,7 @@ class WriteAvavtar(BaseModel):
 async def write_avatar(req:WriteAvavtar,authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(authorization):
         raise HTTPException(status_code = 401,detail = "Authorization error")
-    if not verify_signature(req,x_signature,x_timestamp):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code=403,detail = "Invalid signature")
     with open(prof_file,"r") as file:
         data = json.load(file)
@@ -270,7 +268,7 @@ class CreateNewChat(BaseModel):
 async def create_new_chat(req:CreateNewChat,authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(authorization):
         raise HTTPException(status_code = 401,detail = "Authorization error")
-    if not verify_signature(req,x_signature,x_timestamp):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 403,detail = "Invalid signature")
     try:
         ind = False
@@ -294,7 +292,7 @@ class ClearTheChat(BaseModel):
 async def clear_the_chat(req:ClearTheChat,authorizations:str  = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(authorizations):
         raise HTTPException(status_code = 401,detail = "Authorization error")
-    if not verify_signature(req,x_signature,x_timestamp):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 403,detail = "Invalid signature")
     try:
         ind = False
@@ -320,7 +318,7 @@ class GetUserAvatar(BaseModel):
 async def get_user_profile(req:GetUserAvatar,authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(authorization):
         raise HTTPException(status_code = 401,detail = "Authorization error")
-    if not verify_signature(req,x_signature,x_timestamp):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 403,detail = "Invalid signature")    
     try:
         with open(prof_file,"r") as file:
@@ -340,7 +338,7 @@ class WriteMessage(BaseModel):
 async def write_message(request:WriteMessage,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(x_authorization):
         raise HTTPException(status_code = 401,detail = "Authorization error")
-    if not verify_signature(request,x_signature,x_timestamp):
+    if not verify_signature(request.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
         ind = False
@@ -371,7 +369,7 @@ class DeleteThemessage(BaseModel):
 async def delete_message(req:DeleteThemessage,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(x_authorization):
         raise HTTPException(status_code = 401,detail = "Authorization error")
-    if not verify_signature(req,x_signature,x_timestamp):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
         indificator = False
@@ -396,7 +394,7 @@ class GetChatMessages(BaseModel):
 async def get_chat_messages(req:GetChatMessages,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(x_authorization):
         raise HTTPException(status_code = 401,detail = "Authorization error")
-    if not verify_signature(req,x_signature,x_timestamp):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
         with open(chats_file,"r") as file:
@@ -420,7 +418,7 @@ class GetUserChats(BaseModel):
 async def get_user_chats(req:GetUserChats,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(x_authorization):
         raise HTTPException(status_code = 401,detail = "Authorization error")
-    if not verify_signature(req,x_signature,x_timestamp):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
         if not is_user_exists(req.username):
@@ -442,7 +440,10 @@ async def get_user_chats(req:GetUserChats,x_authorization:str = Header(...),x_si
 
 @app.get("/search/{username}",dependencies = [Depends(safe_get)])
 async def search(username:str):
-    pass
+    try:
+        pass
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
 #---- RUN ----
 def run_api():

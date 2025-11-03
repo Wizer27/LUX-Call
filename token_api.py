@@ -495,7 +495,12 @@ async def search(username:str):
                 result.append(user)
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
-
+class WriteCallToChat(BaseModel):
+    chat_id:str
+    username:str # who is calling
+    date:str
+    call_type:str
+@app.post("/write/call")
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

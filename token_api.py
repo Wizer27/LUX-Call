@@ -500,7 +500,33 @@ class WriteCallToChat(BaseModel):
     username:str # who is calling
     date:str
     call_type:str
+    long:str
 @app.post("/write/call")
+async def write_call(req:WriteCallToChat,x_authorization:str = Header(...),x_timestamp:str = Header(...),x_signature:str = Header(...)):
+    if not check_autorizations(x_authorization):
+        raise HTTPException(status_code = 401,detail ="Authorization error")
+    if not verify_signature(req,x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        ind = False
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for chat in data:
+            if chat["id"] == req.chat_id:
+                chat["messages"].append({
+                    "username":req.username,
+                    "date":req.date if req.date != "" else datetime.now(),
+                    "call_type":req.call_type,
+                    "id":str(uuid.uuid4()),
+                    "long":req.long
+                }) 
+                with open(chats_file,"w") as file:
+                    json.dump(data,file)
+                ind = True
+        if not ind:
+            raise HTTPException(status_code = 404,detail = "Chat not found")          
+    except Exception as e:
+        raise HTTPException(sttaus_code = 400,detail = f"Error : {e}")  
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

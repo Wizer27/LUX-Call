@@ -527,6 +527,22 @@ async def write_call(req:WriteCallToChat,x_authorization:str = Header(...),x_tim
             raise HTTPException(status_code = 404,detail = "Chat not found")          
     except Exception as e:
         raise HTTPException(sttaus_code = 400,detail = f"Error : {e}")  
+    
+@app.post("/get/{username}/contacts",dependencies = [Depends(safe_get)])
+async def get_user_contacts(username:str):
+    if not  is_user_exists(username):
+        raise HTTPException(status_code = 404,detail = "User doesnt exists")
+    try:
+        contacts = []
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for chat in data:
+            if username in chat["users"]:
+                second_user = get_except(username,chat["users"])
+                contacts.append(second_user)
+        return contacts       
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

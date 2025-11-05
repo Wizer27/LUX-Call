@@ -566,7 +566,41 @@ async def get_user_recent(username:str):
             if user["username"] == username:
                 return user["recent"]    
     except Exception as e:
-        raise HTTPException(status_code = 400,detail = f"Error : {e}")    
+        raise HTTPException(status_code = 400,detail = f"Error : {e}") 
+#ADMIN 
+class DeleteUser(BaseModel):
+    username:str
+@app.post("/delete/user")
+async def delete_user(req:DeleteUser,x_authorization,x_signature:str,x_timestamp:str):
+    if not check_autorizations(x_authorization):
+        raise HTTPException(status_code = 401,detail = "Authorization error")
+    if not verify_signature(req,x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        def delete_user_psw(username:str):
+            with open(users_file,"r") as file:
+                data = json.load(file)
+            del data[username]
+            with open(users_file,"w") as file:
+                json.dump(data,file)
+        def set_deleted_avatar(username:str):
+            with open(prof_file,"r") as file:
+                data = json.load(file)
+            data[username] = "" #deafult avatar pictiure that deleted account 
+            with open(prof_file,"w") as file:
+                json.load(data,file)
+        def delete_recent_history(username:str):
+            with open(prof_file,"r") as file:
+                data = json.load(file)
+            for user in data:
+                if user["username"] == username:
+                    ind = data.index(user)
+                    data.pop(ind)
+                    with open(prof_file,"w") as file:
+                        json.dump(data,file)
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
+       
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

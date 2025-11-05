@@ -12,6 +12,8 @@ from jose import JWTError,jwt,ExpiredSignatureError
 from datetime import datetime,timedelta
 import redis
 from typing import List, Optional, Tuple
+import asyncio
+import aiofiles
 
 
 
@@ -570,6 +572,7 @@ async def get_user_recent(username:str):
 #ADMIN 
 class DeleteUser(BaseModel):
     username:str
+    token:str
 @app.post("/delete/user")
 async def delete_user(req:DeleteUser,x_authorization,x_signature:str,x_timestamp:str):
     if not check_autorizations(x_authorization):
@@ -577,19 +580,31 @@ async def delete_user(req:DeleteUser,x_authorization,x_signature:str,x_timestamp
     if not verify_signature(req,x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
-        def delete_user_psw(username:str):
-            with open(users_file,"r") as file:
-                data = json.load(file)
-            del data[username]
-            with open(users_file,"w") as file:
-                json.dump(data,file)
-        def set_deleted_avatar(username:str):
-            with open(prof_file,"r") as file:
-                data = json.load(file)
-            data[username] = "" #deafult avatar pictiure that deleted account 
-            with open(prof_file,"w") as file:
-                json.load(data,file)
-        def delete_recent_history(username:str):
+        async def delete_user_psw(username:str):
+            async with aiofiles.open(users_file,"r") as file:
+                cont = await file.read()
+                data = json.loads(cont)
+            if username in data:
+                del data[username]
+            else:
+                print(f"User : {username} not found")    
+            async with aiofiles.open(users_file,"w") as file:
+                await file.write(json.dumps(data,indent = 2))
+
+        async def set_deleted_avatar(username:str):
+            async with aiofiles.open(prof_file,"r") as file:
+                cont = await file.read()
+                data = json.loads(cont)
+            if username in data:
+                data[username] = "" #deafult avatar pictiure that deleted account 
+                async with aiofiles.open(prof_file,"w") as file:
+                    await file.write(json.dumps(data,indent= 2))
+            else:
+                print(f"User {username} not found")
+                
+
+
+        async def delete_recent_history(username:str):
             with open(prof_file,"r") as file:
                 data = json.load(file)
             for user in data:
@@ -598,6 +613,17 @@ async def delete_user(req:DeleteUser,x_authorization,x_signature:str,x_timestamp
                     data.pop(ind)
                     with open(prof_file,"w") as file:
                         json.dump(data,file)
+        async def log_out(token:str):
+            payload = jwt.decode(req.token,get_secret(),algorithms=["HS256"])
+            username = payload.get("sub")
+            token_find = find_refresh_token(req.token)
+            if token_find != -1:
+                if token_find["username"] == username:
+                    delete_refresh_token(req.token)
+                else:
+                    raise HTTPException(status_code = 403,detail = "Invalid token")    
+            else:
+                raise HTTPException(status_code = 404,detail  = "Token not found")                    
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
        

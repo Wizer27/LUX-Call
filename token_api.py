@@ -66,6 +66,7 @@ users_file = "data/users.json"
 refresh_file = "data/sessions.json"
 prof_file = "data/avatars.json"
 chats_file = "data/chats.json"
+recent_file = "data/recent.json"
 
 def write_default_avatar(username:str):
     with open(prof_file,"r") as file:
@@ -482,7 +483,18 @@ async def get_user_chats(req:GetUserChats,x_authorization:str = Header(...),x_si
         return result
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
-
+def write_new_recent(username:str,search_history:str):
+    if not is_user_exists(username):
+        print("User not found")
+        raise ValueError
+    try:
+        with open(recent_file,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == username:
+                user["recent"].append(username)
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
 @app.get("/search/{username}",dependencies = [Depends(safe_get)])
 async def search(username:str):
     try:
@@ -543,6 +555,18 @@ async def get_user_contacts(username:str):
         return contacts       
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+@app.post("/get/{username}/recent",dependencies=[Depends(safe_get)])
+async def get_user_recent(username:str):
+    if not is_user_exists(username):
+        raise HTTPException(status_code=404,detail = "User not found")
+    try:
+        with open(recent_file,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == username:
+                return user["recent"]    
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")    
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

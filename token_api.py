@@ -69,6 +69,7 @@ refresh_file = "data/sessions.json"
 prof_file = "data/avatars.json"
 chats_file = "data/chats.json"
 recent_file = "data/recent.json"
+history_calls = "data/calls_history.json"
 
 def write_default_avatar(username:str):
     with open(prof_file,"r") as file:
@@ -80,6 +81,11 @@ def get_api_key() -> str:
     with open("data/secrets.json","r") as file:
         data = json.load(file)
     return data["api_get"]
+def default_history_calls(username:str):
+    try:
+        pass
+    except Exception as e:
+        pass
 #safe get request
 async def safe_get(req:Request):
     try:
@@ -574,7 +580,7 @@ class DeleteUser(BaseModel):
     username:str
     token:str
 @app.post("/delete/user")
-async def delete_user(req:DeleteUser,x_authorization,x_signature:str,x_timestamp:str):
+async def delete_user(req:DeleteUser,x_authorization = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(x_authorization):
         raise HTTPException(status_code = 401,detail = "Authorization error")
     if not verify_signature(req,x_signature,x_timestamp):

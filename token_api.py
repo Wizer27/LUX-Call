@@ -601,17 +601,20 @@ async def delete_user(req:DeleteUser,x_authorization,x_signature:str,x_timestamp
                     await file.write(json.dumps(data,indent= 2))
             else:
                 print(f"User {username} not found")
-                
+
 
 
         async def delete_recent_history(username:str):
-            with open(prof_file,"r") as file:
-                data = json.load(file)
+            async with aiofiles.open(prof_file,"r") as file:
+                cont = await file.read()
+                data = json.loads(file)
+                #DEBUG
+                print(type(data))
             for user in data:
                 if user["username"] == username:
                     ind = data.index(user)
                     data.pop(ind)
-                    with open(prof_file,"w") as file:
+                    async with aiofiles.open(prof_file,"w") as file:
                         json.dump(data,file)
         async def log_out(token:str):
             payload = jwt.decode(req.token,get_secret(),algorithms=["HS256"])
@@ -623,10 +626,25 @@ async def delete_user(req:DeleteUser,x_authorization,x_signature:str,x_timestamp
                 else:
                     raise HTTPException(status_code = 403,detail = "Invalid token")    
             else:
-                raise HTTPException(status_code = 404,detail  = "Token not found")                    
+                raise HTTPException(status_code = 404,detail  = "Token not found")  
+        async def run(username:str,token:str):
+            try:
+                await asyncio.gather(
+                delete_user_psw(username),
+                set_deleted_avatar(username),
+                delete_recent_history(username),
+                log_out(token)
+            )
+            except Exception as e:
+                raise HTTPException(status_code = 400,detail = f"Error : {e}")
+        await run(req.username,req.token)
+
+
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
        
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)
+if __name__ == "__main__":
+    run_api()

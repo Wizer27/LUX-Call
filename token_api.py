@@ -533,7 +533,8 @@ def write_calls_history(username:str,to_user:str,call_type:str,date:str):
                     "type":call_type,
                     "date":date,
                     "username":username,
-                    "to_user":to_user
+                    "to_user":to_user,
+                    "id":str(uuid.uuid4())
                 })    
                 with open(history_calls,"w") as file:
                     json.dump(data,file)
@@ -567,6 +568,8 @@ async def write_call(req:WriteCallToChat,x_authorization:str = Header(...),x_tim
                     "id":str(uuid.uuid4()),
                     "long":req.long
                 }) 
+                second_user = get_except(req.username)
+                write_calls_history(req.username,second_user,req.call_type,str(datetime.now()))
                 with open(chats_file,"w") as file:
                     json.dump(data,file)
                 ind = True
@@ -675,7 +678,32 @@ async def delete_user(req:DeleteUser,x_authorization = Header(...),x_signature:s
 
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
-       
+class DeleteFromCallHistory(BaseModel):   
+    username:str
+    call_id:str
+@app.post("/delete/call/history")
+async def delete_call_history(req:DeleteFromCallHistory,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not check_autorizations(x_authorization):
+        raise HTTPException(status_code = 401,deatil = "Authorization error")
+    if not verify_signature(req,x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        f = False
+        with open(history_calls,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == req.username:
+                for call in user["calls"]:
+                    if call["id"] == req.call_id:
+                        ind =  user["calls"].index(call)
+                        user["calls"].pop(ind)
+                        f = True
+                        with open(history_calls,"w") as file:
+                            json.dump(data,file)
+        if not f:
+            raise HTTPException(status_code = 404,detail = "Call not found")                    
+    except Exception as e:
+        raise HTTPException(status_code = 400,deatil = f"Error : {e}")        
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

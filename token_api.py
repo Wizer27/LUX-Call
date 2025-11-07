@@ -83,7 +83,14 @@ def get_api_key() -> str:
     return data["api_get"]
 def default_history_calls(username:str):
     try:
-        pass
+        with open(history_calls,"r") as file:
+            data = json.load(file)
+        data.append({
+            "username":username,
+            "calls":[]
+        })     
+        with open(history_calls,"w") as file:
+            json.dump(data,file)
     except Exception as e:
         pass
 #safe get request

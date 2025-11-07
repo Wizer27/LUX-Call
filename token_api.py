@@ -703,7 +703,40 @@ async def delete_call_history(req:DeleteFromCallHistory,x_authorization:str = He
         if not f:
             raise HTTPException(status_code = 404,detail = "Call not found")                    
     except Exception as e:
-        raise HTTPException(status_code = 400,deatil = f"Error : {e}")        
+        raise HTTPException(status_code = 400,deatil = f"Error : {e}")   
+@app.get("/get/{username}/call_history",dependencies=Depends[safe_get])
+async def get_user_history(username:str):
+    try:
+        with open(history_calls,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == username:
+                return user["calls"]
+        raise HTTPException(status_code = 404,detail = "Not found")
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")   
+class ClearUserHistory(BaseModel):
+    username:str
+@app.post("/clear/user/history")
+async def clear_history(req:ClearUserHistory,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not check_autorizations(x_authorization):
+        raise HTTPException(status_code = 401,deatail = "Authorization error")
+    if not verify_signature(req,x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,deatil = "Invalid signature")
+    try:
+        ind = False
+        with open(history_calls,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == req.username:
+                user["calls"] = []
+                with open(history_calls,"w") as file:
+                    json.dump(data,file)
+                ind = True
+        if not ind:
+            raise HTTPException(status_code = 404,deatil = "User not found")            
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")           
 #---- RUN ----
 def run_api():
     uvicorn.run(app,host = "0.0.0.0",port = 8080)

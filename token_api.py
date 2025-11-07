@@ -92,7 +92,7 @@ def default_history_calls(username:str):
         with open(history_calls,"w") as file:
             json.dump(data,file)
     except Exception as e:
-        pass
+        print(f"Error : {e}")
 #safe get request
 async def safe_get(req:Request):
     try:
@@ -522,6 +522,26 @@ async def search(username:str):
                 result.append(user)
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+def write_calls_history(username:str,to_user:str,call_type:str,date:str):
+    try:
+        with open(history_calls,"r") as file:
+            data = json.load(file)
+        ind = False    
+        for user in data:
+            if user["username"] == username:
+                user["calls"].append({
+                    "type":call_type,
+                    "date":date,
+                    "username":username,
+                    "to_user":to_user
+                })    
+                with open(history_calls,"w") as file:
+                    json.dump(data,file)
+                ind = True    
+        if not ind:
+            print("Not found")        
+    except Exception as e:
+        print(f"Error : {e}")    
 class WriteCallToChat(BaseModel):
     chat_id:str
     username:str # who is calling

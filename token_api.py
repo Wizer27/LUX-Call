@@ -376,7 +376,18 @@ async def delete_the_chat(req:ClearTheChat,x_authorization:str = Header(...),x_s
     if not verify_signature(req,x_signature,x_timestamp):
         raise HTTPException(status_code = 401,detail = "Invalid signature")
     try:
-        pass# .join
+        indf = False
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for chat in data:
+            if chat["id"] == req.chat_id:
+                ind = data.index(chat)
+                data.pop(ind)
+                indf = True
+                with open(chats_file,"w") as file:
+                    json.dump(data,file)
+        if not ind:
+            raise HTTPException(status_code = 404,deatail = "Error chat not found")
     except Exception as e:
         raise HTTPException(status_code = 400,deatil = f"Error : {e}")    
 #--- user profie --- 

@@ -216,6 +216,23 @@ void default_calls_history(const string username){
         write_logs(e.what());
     }
 }
+string join(vector<string> data,char s){
+    try{
+        string res = "";
+        long long int last = data.size() - 1;
+        for(int i = 0; i< data.size();i++){
+            if(i != last){
+                res += data[i] + s;
+            }else{
+                res += data[i];
+            }
+        }
+        return res;
+    }catch(exception& e){
+        std::cerr << e.what() << endl;
+    }
+
+}
 void default_profile_photo(string username){
     try{
         ifstream file(prof_photo);if(!file.is_open()) std::cerr << "Error while opening" << endl;

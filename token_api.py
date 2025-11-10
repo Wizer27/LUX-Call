@@ -369,6 +369,16 @@ async def clear_the_chat(req:ClearTheChat,authorizations:str  = Header(...),x_si
             raise HTTPException(status_code = 400,detail = "Chat not found")            
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+@app.post("/delete/chat")
+async def delete_the_chat(req:ClearTheChat,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not check_autorizations(x_authorization):
+        raise HTTPException(status_code = 401,detail = "Authorization error")
+    if not verify_signature(req,x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        pass# .join
+    except Exception as e:
+        raise HTTPException(status_code = 400,deatil = f"Error : {e}")    
 #--- user profie --- 
 
 

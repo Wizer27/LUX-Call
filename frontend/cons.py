@@ -6,7 +6,16 @@ import hmac
 import json
 import time
 
+secrets_file = "/Users/ivan/LUX-Call/data/secrets.json"
 
+
+def get_key() -> str:
+    try:
+        with open(secrets_file,"r") as file:
+            data = json.load(file)
+             
+    except Exception as e:
+        print(f"Exception : {e}")
 class SigantureClient():
     def __init__(self,key:str):
         self.key = key

@@ -31,4 +31,16 @@ class SigantureClient():
         
         return hmac.compare_digest(received_signature, expected_signature)
 siganture_middleware = SigantureClient()
+username = input("Username: ")
+pasw = input("Password: ")
+def register(username:str,psw:str) -> bool:
+    url = "http://0.0.0.0:8080/register"
+    data = {
+        "username":username,
+        "psw":psw
+    }
+    headers = {
+        "signature":siganture_middleware.generate_siganture(data),
+        "x_timestamp":str(time.time())
+    }
     

@@ -30,3 +30,5 @@ class SigantureClient():
         expected_signature = hmac.new(self.key.encode(), data_str.encode(), hashlib.sha256).hexdigest()
         
         return hmac.compare_digest(received_signature, expected_signature)
+siganture_middleware = SigantureClient()
+    

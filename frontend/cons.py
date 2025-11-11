@@ -43,4 +43,10 @@ def register(username:str,psw:str) -> bool:
         "signature":siganture_middleware.generate_siganture(data),
         "x_timestamp":str(time.time())
     }
-    
+    resp = requests.post(url,json = data,headers=headers)
+    print(f"JSON : {resp.json}")
+    print(f"TEXT : {resp.text}")
+    print(F"CODE : {resp.status_code}")
+    return resp.status_code == 200
+register(username,pasw)
+

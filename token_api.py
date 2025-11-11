@@ -725,7 +725,7 @@ async def delete_call_history(req:DeleteFromCallHistory,x_authorization:str = He
             raise HTTPException(status_code = 404,detail = "Call not found")                    
     except Exception as e:
         raise HTTPException(status_code = 400,deatil = f"Error : {e}")   
-@app.get("/get/{username}/call_history",dependencies=Depends[safe_get])
+@app.get("/get/{username}/call_history",dependencies=[Depends(safe_get)])
 async def get_user_history(username:str):
     try:
         with open(history_calls,"r") as file:

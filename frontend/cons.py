@@ -35,7 +35,7 @@ def print_login_register_menu():
     ║                                                  ║
     ║          ████████████████████████████████        ║
     ║                                                  ║
-    ║          [1] Войти    |    [2] Регистрация       ║
+    ║          [1] LOGIN    |    [2] REGISTER          ║
     ║                                                  ║
     ╚══════════════════════════════════════════════════╝
     """
@@ -102,11 +102,8 @@ def register(username:str,psw:str) -> bool:
         "Content-Type": "application/json"
     }
     resp = requests.post(url,json = data,headers=headers)
-    print(f"JSON : {resp.json}")
-    print(f"TEXT : {resp.text}")
-    print(F"CODE : {resp.status_code}")
     return resp.status_code == 200
-def login(username:str,psw:str) ->str:
+def login(username:str,psw:str) ->bool:
     try:
         url = f"{BASE_URL}/login"
         data = {
@@ -114,14 +111,42 @@ def login(username:str,psw:str) ->str:
             "psw":hash_password(psw)
         }
         headers = {
-            "X-Siganture":siganture_middleware.generate_siganture(data),
+            "X-Signature":siganture_middleware.generate_siganture(data),
             "X-Timestamp":str(int(time.time()))
         }
         resp = requests.post(url,json = data,headers=headers)
+        print(f"JSON : {resp.json}")
+        print(f"TEXT : {resp.text}")
         return resp.status_code == 200
     except Exception as e:
         print(f"Error : {e}")
         raise TypeError("Login Error")
-register(username,pasw)
+user_data = {}    
+if session.lower() == "1": 
+    username = input("Username: ")
+    password = input("Password: ")
+    reg_ind = login(username,pasw)
+    while not reg_ind:
+        print("WRONG DATA")
+        username = input("Username: ")
+        password = input("Password: ")
+    print("LOGIN SUCCESSFULL")
+    user_data["username"] = username
 
+    
 
+if session.lower() == "2":
+
+    username = input("Username: ")
+    password = input("Create a password: ")
+    reg_ind = register(username,pasw)
+    while not reg_ind:
+        print("THIS USER ALREADY EXISTS")
+        username = input("Username: ")
+        password = input("Create a password: ")
+    print("REGISTRATION SUCCESSFULL")
+    user_data["username"] = username
+
+if user_data.get("username"):
+    pass
+    

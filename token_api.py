@@ -70,6 +70,7 @@ prof_file = "data/avatars.json"
 chats_file = "data/chats.json"
 recent_file = "data/recent.json"
 history_calls = "data/calls_history.json"
+secrets_file = "data/secrets.json"
 
 def write_default_avatar(username:str):
     with open(prof_file,"r") as file:
@@ -168,7 +169,7 @@ def delete_refresh_token(token:str):
 
 
 def get_secret() -> str:
-    with open("secrets.json","r") as file:
+    with open(secrets_file,"r") as file:
         data = json.load(file)
     return data["secret_for_jwt"]    
 
@@ -238,7 +239,7 @@ async def login(request:Register,x_signature:str = Header(...),x_timestamp:str =
                     raise HTTPException(status_code = 403,detail = "Wrong password or username")     
                  
         except Exception as e:
-            raise HTTPException(status_code = 400,detail = f"Erorr : {e}")  
+            raise HTTPException(status_code = 400,detail = f"Error : {e}")  
 async def check_jwt_token(token:str = Depends(oauth2_scheme)):
     try:
         with open(users_file,"r") as file:

@@ -1,7 +1,1 @@
-[
-    {
-        "token":"some_token",
-        "username":"test",
-        "exp":"49837482974983"
-    }
-]
+[{"token": "some_token", "username": "test", "exp": "49837482974983"}, {"username": "t", "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0IiwiZXhwIjoxNzY1NTQzNTU0LCJ0eXAiOiJyZWZyZXNoIn0.-AorCRefVsmh7v40Zy9rwMX1S_7QHyvq9oGKBvneumA", "exp": 1765543554}]

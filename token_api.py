@@ -14,6 +14,8 @@ import redis
 from typing import List, Optional, Tuple
 import asyncio
 import aiofiles
+from cryptography.fernet import Fernet
+
 
 
 
@@ -71,6 +73,7 @@ chats_file = "data/chats.json"
 recent_file = "data/recent.json"
 history_calls = "data/calls_history.json"
 secrets_file = "data/secrets.json"
+crypto_file = "data/crypt_keys.json"
 
 def write_default_avatar(username:str):
     with open(prof_file,"r") as file:
@@ -78,6 +81,22 @@ def write_default_avatar(username:str):
     data[username] = "None"
     with open(prof_file,"w") as file:
         json.dump(data,file)
+def create_user_public_key(username:str):
+    try:
+        with open(crypto_file,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == username:
+                raise ValueError("Error user already in database")
+        data.append({
+            "username":username,
+            "key":str(Fernet.generate_key())
+        })        
+        with open(crypto_file,"w") as file:
+            json.dump(data,file)
+
+    except Exception as e:
+        raise TypeError("Crypto error")
 def get_api_key() -> str:
     with open("data/secrets.json","r") as file:
         data = json.load(file)
@@ -103,6 +122,9 @@ async def safe_get(req:Request):
 
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+
+
+
 
 def get_siganture_key() -> str:
     with open("data/secrets.json","r") as file:
@@ -488,6 +510,7 @@ async def get_chat_messages(req:GetChatMessages,x_authorization:str = Header(...
         raise HTTPException(status_code = 404,detail = "Chat not found")
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+
 class LeaveTheChat(BaseModel):
     pass
 

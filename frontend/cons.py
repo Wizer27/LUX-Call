@@ -152,8 +152,11 @@ if session.lower() == "2":
     print("REGISTRATION SUCCESSFULL")
     user_data["username"] = username
 def get_user_chats(username:str):
-    pass
-
+    try:
+        pass
+    except Exception as e:
+        print(f"Error : {e}")
+        raise TypeError("Error get user chats")
 
 if user_data.get("username"):
     pass

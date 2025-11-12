@@ -488,6 +488,34 @@ async def get_chat_messages(req:GetChatMessages,x_authorization:str = Header(...
         raise HTTPException(status_code = 404,detail = "Chat not found")
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
+class LeaveTheChat(BaseModel):
+    pass
+
+
+@app.get("join/link/chat/{chat_id}/{username}",dependencies = [Depends(safe_get)])
+async def link_chat_join(username:str,chat_id:str):
+    try:
+        ind = False
+        with open(chats_file,"r") as file:
+            data = json.load(data)
+        for chat in data:
+            if chat["id"] == chat_id:
+                if username in chat["users"]:
+                    raise HTTPException(status_code = 400,detail = "User already in this chat")
+                else:
+                    ind = True
+                    chat["users"].append(username)
+                    chat["messages"].append({
+                        "type":"join",
+                        "message":f"User {username} joined this chat"
+                    })
+                    with open(chats_file,"w") as file:
+                        json.dump(data,file)  
+        if not ind:
+            raise HTTPException(status_code=404,detail = "Chat not found")                  
+    except Exception as e:
+        pass
+
 def get_except(username:str,data) -> str:
     if len(data) != 2:
         raise ValueError

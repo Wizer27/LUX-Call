@@ -231,7 +231,7 @@ async def login(request:Register,x_signature:str = Header(...),x_timestamp:str =
                 if data[request.username] == request.psw:
                     token = create_access_token(request.username)
                     return {
-                        "access_stoken":token,
+                        "access_token":token,
                         "refresh_token":create_refresh_token(request.username),
                         "token_type":"bearer"
                     }

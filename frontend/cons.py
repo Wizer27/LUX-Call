@@ -88,8 +88,6 @@ class SigantureClient():
         
         return hmac.compare_digest(received_signature, expected_signature)
 siganture_middleware = SigantureClient(get_key())
-username = input("Username: ")
-pasw = input("Password: ")
 def register(username:str,psw:str) -> bool:
     url = f"{BASE_URL}/register"
     data = {
@@ -103,7 +101,7 @@ def register(username:str,psw:str) -> bool:
     }
     resp = requests.post(url,json = data,headers=headers)
     return resp.status_code == 200
-def login(username:str,psw:str) ->bool:
+def login(username:str,psw:str):
     try:
         url = f"{BASE_URL}/login"
         data = {
@@ -117,7 +115,11 @@ def login(username:str,psw:str) ->bool:
         resp = requests.post(url,json = data,headers=headers)
         print(f"JSON : {resp.json}")
         print(f"TEXT : {resp.text}")
-        return resp.status_code == 200
+        return {
+            "status_code":resp.status_code,
+            "token":resp.json()["access_token"],
+            "refresh":resp.json()["refresh_token"]
+        }
     except Exception as e:
         print(f"Error : {e}")
         raise TypeError("Login Error")
@@ -125,13 +127,16 @@ user_data = {}
 if session.lower() == "1": 
     username = input("Username: ")
     password = input("Password: ")
-    reg_ind = login(username,pasw)
-    while not reg_ind:
+    reg_ind = login(username,password)
+    print(reg_ind)
+    while not reg_ind["status_code"] == 200:
         print("WRONG DATA")
         username = input("Username: ")
         password = input("Password: ")
     print("LOGIN SUCCESSFULL")
     user_data["username"] = username
+    user_data["jwt_token"] = reg_ind["token"]
+    user_data["refresh"] = reg_ind["refresh"]
 
     
 
@@ -139,13 +144,16 @@ if session.lower() == "2":
 
     username = input("Username: ")
     password = input("Create a password: ")
-    reg_ind = register(username,pasw)
+    reg_ind = register(username,password)
     while not reg_ind:
         print("THIS USER ALREADY EXISTS")
         username = input("Username: ")
         password = input("Create a password: ")
     print("REGISTRATION SUCCESSFULL")
     user_data["username"] = username
+def get_user_chats(username:str):
+    pass
+
 
 if user_data.get("username"):
     pass

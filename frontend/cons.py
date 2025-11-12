@@ -5,8 +5,53 @@ import uuid
 import hmac
 import json
 import time
+from jose import JWTError,jwt
+
+
+def print_lux():
+    lux_art = """
+    ██╗      ██╗   ██╗██╗  ██╗
+    ██║      ██║   ██║╚██╗██╔╝
+    ██║      ██║   ██║ ╚███╔╝ 
+    ██║      ██║   ██║ ██╔██╗ 
+    ███████╗ ╚██████╔╝██╔╝ ██╗
+    ╚══════╝  ╚═════╝ ╚═╝  ╚═╝
+    """
+    print("\033[1;35m" + lux_art + "\033[0m")
+print_lux()
+def print_login_register_menu():
+    menu = """
+    ╔══════════════════════════════════════════════════╗
+    ║                      LUX                         ║
+    ╠══════════════════════════════════════════════════╣
+    ║                                                  ║
+    ║          ████████████████████████████████        ║
+    ║                                                  ║
+    ║           ╔════════════════════════════╗         ║
+    ║           ║       » 1. LOGIN  «        ║         ║
+    ║           ║    ────────────────────    ║         ║
+    ║           ║       » 2. REGISTER «      ║         ║
+    ║           ╚════════════════════════════╝         ║
+    ║                                                  ║
+    ║          ████████████████████████████████        ║
+    ║                                                  ║
+    ║          [1] Войти    |    [2] Регистрация       ║
+    ║                                                  ║
+    ╚══════════════════════════════════════════════════╝
+    """
+    print("\033[1;36m" + menu + "\033[0m")
+print_login_register_menu()
+session = input("> ")
+
+while session.lower() != "1" and session.lower() != "2":
+    print("INVALID OPTION")
+    session = input("> ")
+  
+
 
 secrets_file = "/Users/ivan/LUX-Call/data/secrets.json"
+BASE_URL = "http://0.0.0.0:8080"
+
 
 def hash_password(psw:str) -> str:
     bt = psw.encode("utf-8")
@@ -46,7 +91,7 @@ siganture_middleware = SigantureClient(get_key())
 username = input("Username: ")
 pasw = input("Password: ")
 def register(username:str,psw:str) -> bool:
-    url = "http://0.0.0.0:8080/register"
+    url = f"{BASE_URL}/register"
     data = {
         "username":username,
         "psw":hash_password(psw)
@@ -61,5 +106,22 @@ def register(username:str,psw:str) -> bool:
     print(f"TEXT : {resp.text}")
     print(F"CODE : {resp.status_code}")
     return resp.status_code == 200
+def login(username:str,psw:str) ->str:
+    try:
+        url = f"{BASE_URL}/login"
+        data = {
+            "username":username,
+            "psw":hash_password(psw)
+        }
+        headers = {
+            "X-Siganture":siganture_middleware.generate_siganture(data),
+            "X-Timestamp":str(int(time.time()))
+        }
+        resp = requests.post(url,json = data,headers=headers)
+        return resp.status_code == 200
+    except Exception as e:
+        print(f"Error : {e}")
+        raise TypeError("Login Error")
 register(username,pasw)
+
 

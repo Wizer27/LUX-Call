@@ -8,12 +8,15 @@ import time
 
 secrets_file = "/Users/ivan/LUX-Call/data/secrets.json"
 
-
+def hash_password(psw:str) -> str:
+    bt = psw.encode("utf-8")
+    hashed = hashlib.sha256(bt).hexdigest()
+    return str(hashed)
 def get_key() -> str:
     try:
         with open(secrets_file,"r") as file:
             data = json.load(file)
-             
+        return data["sign"]    
     except Exception as e:
         print(f"Exception : {e}")
 class SigantureClient():
@@ -39,18 +42,19 @@ class SigantureClient():
         expected_signature = hmac.new(self.key.encode(), data_str.encode(), hashlib.sha256).hexdigest()
         
         return hmac.compare_digest(received_signature, expected_signature)
-siganture_middleware = SigantureClient()
+siganture_middleware = SigantureClient(get_key())
 username = input("Username: ")
 pasw = input("Password: ")
 def register(username:str,psw:str) -> bool:
     url = "http://0.0.0.0:8080/register"
     data = {
         "username":username,
-        "psw":psw
+        "psw":hash_password(psw)
     }
     headers = {
-        "signature":siganture_middleware.generate_siganture(data),
-        "x_timestamp":str(time.time())
+        "X-Signature": siganture_middleware.generate_siganture(data),
+        "X-Timestamp": str(int(time.time())),
+        "Content-Type": "application/json"
     }
     resp = requests.post(url,json = data,headers=headers)
     print(f"JSON : {resp.json}")

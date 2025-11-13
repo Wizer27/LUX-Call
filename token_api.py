@@ -236,6 +236,7 @@ async def register(request:Register,x_signature:str = Header(...),x_timestamp:st
             with open(users_file,"w") as file:
                 json.dump(data,file)  
             write_default_avatar(request.username)    
+            create_user_public_key(request.username)
     except Exception as e:
         raise HTTPException(status_code = 400,detail = f"Error : {e}") 
 @app.post("/login")

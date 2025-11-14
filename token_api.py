@@ -101,6 +101,7 @@ def get_api_key() -> str:
     with open("data/secrets.json","r") as file:
         data = json.load(file)
     return data["api_get"]
+
 def default_history_calls(username:str):
     try:
         with open(history_calls,"r") as file:
@@ -288,7 +289,19 @@ def check_autorizations(authorizations:str) -> bool:
     except (ValueError,JWTError):
         print("Value and Jwt errors")
         return False
-    
+
+@app.get("/get/user/public/key/{username}",dependencies=[Depends(safe_get)])
+async def get_user_public_key(username:str):
+    try:
+        with open(crypto_file,"r") as file:
+            data = json.load(file)
+        for user in data:
+            if user["username"] == username:
+                return user["key"]
+        raise HTTPException(status_code = 404,detail = "User not found")         
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
+
 class Refresh(BaseModel):
     token:str          
 @app.post("/refresh")    

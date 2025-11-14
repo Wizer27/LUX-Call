@@ -8,6 +8,9 @@ import time
 from jose import JWTError,jwt
 
 
+
+
+
 def print_lux():
     lux_art = """
     ██╗      ██╗   ██╗██╗  ██╗
@@ -57,6 +60,42 @@ def hash_password(psw:str) -> str:
     bt = psw.encode("utf-8")
     hashed = hashlib.sha256(bt).hexdigest()
     return str(hashed)
+
+def get_api_key() -> str:
+    try:
+        with open("secrets.json","r") as file:
+            data = json.load(file)
+        if not data.get("API"):
+            raise KeyError("Key not found")
+        else:
+            return data["API"]
+
+    except Exception as e:
+        print(f"Error : {e}")
+        raise TypeError("API key error")
+
+def get_user_public_key(username:str) -> str:
+    try:
+        url = f"{BASE_URL}/get/user/public/key/{username}"
+        headears = {
+            "X-API-KEY":get_api_key()
+        }
+        resp = requests.get(url,headers= headears)
+        return resp.json()
+    except Exception as e:
+        print(f"Key error : {e}")
+        raise TypeError("Key Error")
+def get_private_key() -> str:
+    try:
+        with open("keys.json","r") as file:
+            data = json.load(file)
+        if not data.get("key"):
+            KeyError(" no such key")
+        else:
+            return data["key"]    
+    except Exception as e:
+        print(f"Error : {e}")
+        TypeError("Error while private")    
 def get_key() -> str:
     try:
         with open(secrets_file,"r") as file:

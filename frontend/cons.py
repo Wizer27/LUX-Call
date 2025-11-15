@@ -85,7 +85,21 @@ def get_user_public_key(username:str) -> str:
         return resp.json()
     except Exception as e:
         print(f"Key error : {e}")
-        raise TypeError("Key Error")
+        raise TypeError("Key Error") 
+def write_user_public_key(username:str):
+    try:
+        with open("keys.json","r") as file:
+            data = json.load(file)
+        if not data.get("key"):
+            raise KeyError("Error getting private key")
+        elif data["key"] == "":
+            data["key"] = str(Fernet.generate_key())
+            with open("keys.json","w") as file:
+                json.dump(data,file)    
+        else:
+            print(data["key"])               
+    except Exception as e:
+        raise TypeError(f"Error : {e}")      
 def get_private_key() -> str:
     try:
         with open("keys.json","r") as file:
@@ -170,8 +184,15 @@ def encrpt_messsage(username:str,message:str) -> str:
     cipher = Fernet(key)
     encrypted_message = cipher.encrypt(message.encode("utf-8"))
     return str(encrypted_message)
-
-
+def decrypt_message(message_bytes:str):
+    try:
+        private_key = get_private_key()
+        cipher = Fernet(private_key)
+        dec_bytes = cipher.decrypt(message_bytes)
+        return dec_bytes.decode("utf-8")
+    except Exception as e:
+        print(f"Error while decryption : {e}")
+        raise TypeError(f"Error while decryption : {e}")
 user_data = {}    
 if session.lower() == "1": 
     username = input("Username: ")

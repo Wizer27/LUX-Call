@@ -6,6 +6,7 @@ import hmac
 import json
 import time
 from jose import JWTError,jwt
+from cryptography.fernet import Fernet
 
 
 
@@ -162,6 +163,15 @@ def login(username:str,psw:str):
     except Exception as e:
         print(f"Error : {e}")
         raise TypeError("Login Error")
+
+
+def encrpt_messsage(username:str,message:str) -> str:
+    key = get_user_public_key(username)
+    cipher = Fernet(key)
+    encrypted_message = cipher.encrypt(message.encode("utf-8"))
+    return str(encrypted_message)
+
+
 user_data = {}    
 if session.lower() == "1": 
     username = input("Username: ")

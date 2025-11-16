@@ -8,6 +8,7 @@ import time
 from jose import JWTError,jwt
 from cryptography.fernet import Fernet
 from typing import Optional,List
+from prettytable import PrettyTable
 
 
 
@@ -247,9 +248,26 @@ if session.lower() == "1":
         username = input("Username: ")
         password = input("Password: ")
     print("LOGIN SUCCESSFULL")
+    table = PrettyTable()
+    table.field_names = ["COMMAND","DOES"]
+    table.add_row(["help","shows all commands"])
+    table.add_row(["chats","show your chats"])
+    table.add_row(["cd <chat_id>","get into chat"])
+    table.add_row(["lv <chat_id>","leave the chat"])
+    table.add_row(["exit","exit the app"])
+    print(table)
     user_data["username"] = username
     user_data["jwt_token"] = reg_ind["token"]
     user_data["refresh"] = reg_ind["refresh"]
+    while True:
+        command = input("> ")
+        if command == "help":
+            print("table")
+        elif command == "exit":
+            print("CLOSSING YOUR SESSION")   
+            break
+         
+
 
     
 

@@ -142,6 +142,8 @@ class SigantureClient():
         expected_signature = hmac.new(self.key.encode(), data_str.encode(), hashlib.sha256).hexdigest()
         
         return hmac.compare_digest(received_signature, expected_signature)
+    
+siganture_middleware = SigantureClient(get_key())    
 def write_message(username:str,token:str,chat_id:str,message:str,files:Optional[List[str]] = None):
     try:
         url = f"{BASE_URL}/write/message"
@@ -162,9 +164,27 @@ def write_message(username:str,token:str,chat_id:str,message:str,files:Optional[
         print(f"TEXT : {resp.text}")
     except Exception as e:
         print(f"Message Error : {e}")
-        raise ValueError("Error sending message")    
+        raise ValueError("Error sending message")
+def get_my_chats(username:str,token:str):
+    try:
+        data = {
+            "username":username
+        }
+        headers = {
+            "X-Authorizations":f"bearer {token}",
+            "X-Signature":siganture_middleware.generate_siganture(data),
+            "X-Timestamp":str(int(time.time()))
+        }
+        resp = requests.post(f"{BASE_URL}/get/user/chats",json = data,headers= headers)
+        print(f"JSON : {resp.json()}")
+        print(f"STATUS CODE : {resp.status_code}")
+        print(f"TEXT : {resp.text}")
 
-siganture_middleware = SigantureClient(get_key())
+    except Exception as e:
+        print(f"Error : {e}")
+        raise TypeError(f"Error : {e}")    
+
+
 def register(username:str,psw:str) -> bool:
     url = f"{BASE_URL}/register"
     data = {

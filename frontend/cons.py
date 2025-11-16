@@ -7,6 +7,7 @@ import json
 import time
 from jose import JWTError,jwt
 from cryptography.fernet import Fernet
+from typing import Optional,List
 
 
 
@@ -141,6 +142,28 @@ class SigantureClient():
         expected_signature = hmac.new(self.key.encode(), data_str.encode(), hashlib.sha256).hexdigest()
         
         return hmac.compare_digest(received_signature, expected_signature)
+def write_message(username:str,token:str,chat_id:str,message:str,files:Optional[List[str]] = None):
+    try:
+        url = f"{BASE_URL}/write/message"
+        data = {
+            "username":username,
+            "chat_id":chat_id,
+            "message":message,
+            "files": files if files is not None else []
+        }
+        headers = {
+            "X-Authorizations":f"bearer {token}",
+            "X-Signature":siganture_middleware.generate_siganture(data),
+            "X-Timestamp":str(int(time.time()))
+        }
+        resp = requests.post(url,json = data,headers= headers)
+        print(f"JSON : {resp.json()}")
+        print(f"STATUS CODE : {resp.status_code}")
+        print(f"TEXT : {resp.text}")
+    except Exception as e:
+        print(f"Message Error : {e}")
+        raise ValueError("Error sending message")    
+
 siganture_middleware = SigantureClient(get_key())
 def register(username:str,psw:str) -> bool:
     url = f"{BASE_URL}/register"

@@ -254,6 +254,7 @@ if session.lower() == "1":
     table.add_row(["chats","show your chats"])
     table.add_row(["cd <chat_id>","get into chat"])
     table.add_row(["lv <chat_id>","leave the chat"])
+    table.add_row(["wr <username>","write message to someone"])
     table.add_row(["exit","exit the app"])
     print(table)
     user_data["username"] = username
@@ -266,7 +267,8 @@ if session.lower() == "1":
         elif command == "exit":
             print("CLOSSING YOUR SESSION")   
             break
-         
+        elif command == "chats":
+            get_my_chats(username,user_data["jwt_token"]) 
 
 
     

@@ -15,6 +15,8 @@
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>
+#include <random>
+
 
 
 using namespace std;
@@ -63,6 +65,21 @@ public:
 
 };
 
+string generate_key(){
+    const long long int  lenght = 20;
+    const std::string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,./;'[]*()!@#$%_+-";
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<> distribution(0, characters.size() - 1);
+    std::string key;
+    key.reserve(lenght);
+    for(size_t i = 0;i < lenght;++i){
+        key += characters[distribution(generator)];
+    }
+    return key;
+
+}
+
 class Hashing{
 public:
     size_t get_hash(string mess){
@@ -72,6 +89,9 @@ public:
 
 
 int main(){
+    Hashing hsh_obj;
+    string key = generate_key();
+    cout << key << endl;
     return 0;
 }
 

@@ -29,8 +29,35 @@ public:
         vector<unsigned char> iv;
         vector<unsigned char> ciphertext;
     };
-    Enc encrypt(const string& plain_text){
+    Enc encrypt(const std::string& plaintext) {
+        EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+        Enc result;
         
+        // Генерируем случайный IV
+        result.iv.resize(16); // 128 бит для AES
+        RAND_bytes(result.iv.data(), result.iv.size());
+        
+        result.ciphertext.resize(plaintext.size() + EVP_MAX_BLOCK_LENGTH);
+        int len = 0;
+        int ciphertext_len = 0;
+        
+        // Инициализация шифрования
+        EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, 
+                          key.data(), result.iv.data());
+        
+        // Шифрование
+        EVP_EncryptUpdate(ctx, result.ciphertext.data(), &len,
+                         (unsigned char*)plaintext.c_str(), plaintext.length());
+        ciphertext_len = len;
+        
+        // Финальная часть
+        EVP_EncryptFinal_ex(ctx, result.ciphertext.data() + len, &len);
+        ciphertext_len += len;
+        
+        EVP_CIPHER_CTX_free(ctx);
+        result.ciphertext.resize(ciphertext_len);
+        
+        return result;
     }
 
 

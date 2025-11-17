@@ -12,12 +12,29 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include  <openssl>
+#include <openssl/evp.h>
+#include <openssl/rand.h>
+#include <openssl/err.h>
 
 
 using namespace std;
 using json = nlohmann::json;
 
+
+class AES{
+private:
+    vector<unsigned char> key;
+public:
+    struct Enc{
+        vector<unsigned char> iv;
+        vector<unsigned char> ciphertext;
+    };
+    Enc encrypt(const string& plain_text){
+        
+    }
+
+
+};
 
 class Hashing{
 public:

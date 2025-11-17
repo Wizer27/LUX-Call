@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include  <openssl>
 
 
 using namespace std;
@@ -24,6 +25,7 @@ public:
         return std::hash<std::string>()(mess);
     }
 };
+
 
 int main(){
     return 0;

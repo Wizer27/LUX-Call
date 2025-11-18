@@ -136,6 +136,9 @@ public:
 int main(){
     Hashing hsh_obj;
     string key = generate_key();
+    string message = "test_tyest";
+    string enc = enc_with_key(message);
+    cout << "Encrypted" << enc << endl;
     cout << "KEY" << key <<  endl;
     return 0;
 }

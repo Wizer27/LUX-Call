@@ -61,6 +61,29 @@ public:
         
         return result;
     }
+    std::string decrypt(const Enc& encrypted) {
+        EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+        std::vector<unsigned char> plaintext(encrypted.ciphertext.size() + EVP_MAX_BLOCK_LENGTH);
+        int len = 0;
+        int plaintext_len = 0;
+        
+        // Инициализация расшифровки
+        EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, 
+                          key.data(), encrypted.iv.data());
+        
+        // Расшифровка
+        EVP_DecryptUpdate(ctx, plaintext.data(), &len,
+                         encrypted.ciphertext.data(), encrypted.ciphertext.size());
+        plaintext_len = len;
+        
+        // Финальная часть
+        EVP_DecryptFinal_ex(ctx, plaintext.data() + len, &len);
+        plaintext_len += len;
+        
+        EVP_CIPHER_CTX_free(ctx);
+        
+        return std::string(plaintext.begin(), plaintext.begin() + plaintext_len);
+    }
 
 
 };

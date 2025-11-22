@@ -526,6 +526,10 @@ async def get_chat_messages(req:GetChatMessages,x_authorization:str = Header(...
         raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
 class LeaveTheChat(BaseModel):
+    username:str
+    chat_id:str
+@app.post("/leave/chat")
+async def leave_chat(req:LeaveTheChat,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     pass
 
 

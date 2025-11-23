@@ -530,7 +530,25 @@ class LeaveTheChat(BaseModel):
     chat_id:str
 @app.post("/leave/chat")
 async def leave_chat(req:LeaveTheChat,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
-    pass
+    if not check_autorizations(x_authorization):
+        raise HTTPException(status_code = 401,deatil = "Invalid authorizations")
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 403,detail = "Invalid signature")
+    try:
+        with open(chats_file,"r") as file:
+            data = json.load(file)
+        for chat in  data:
+            if chat["id"] == req.chat_id:
+                try:
+                    ind = chat["users"].index(req.username)
+                    chat["users"].pop(ind)
+                    with open(chats_file,"w") as file:
+                        json.dump(data,file)          
+                except Exception as e:
+                    raise HTTPException(status_code = 404,detail = f"User not found in this chat : {e}")    
+
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = f"Error : {e}")
 
 
 @app.get("join/link/chat/{chat_id}/{username}",dependencies = [Depends(safe_get)])

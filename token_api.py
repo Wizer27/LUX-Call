@@ -159,7 +159,7 @@ def verify_signature(data: dict, received_signature: str,timestamp:str ) -> bool
     
     data_str = json.dumps(data_to_verify, sort_keys=True, separators=(',', ':'))
     expected_signature = hmac.new(get_siganture_key().encode(), data_str.encode(), hashlib.sha256).hexdigest()
-    return compare_digest(received_signature,expected_signature)
+    return hmac.compare_digest(received_signature,expected_signature)
 
 def create_access_token(username:str) -> str:
     payload = {

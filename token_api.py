@@ -529,9 +529,18 @@ class HaveChat(BaseModel):
     username:str
     username2:str
 @app.post("/have_chat") 
-async def have_chat():
-    pass   
-
+async def have_chat(req:HaveChat,x_signature:str = Header(...),x_timestamp:str = Header(...)):
+    if not verify_signature(req.model_dump(),x_signature,x_timestamp):
+        raise HTTPException(status_code = 401,detail = "Invalid signature")
+    try:
+        with open(chats_file,"r") as file:
+            chats = json.load(file)
+        for chat in chats:
+            if req.username in chat["users"] and req.username2 in chat["users"]:
+                return True
+        return False    
+    except Exception as e:
+        raise HTTPException(status_code = 400,detail = e)
 
 
 class LeaveTheChat(BaseModel):

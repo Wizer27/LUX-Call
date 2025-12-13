@@ -12,3 +12,8 @@ venv
 ./venv
 data/secrets.json
 crypto/build
+env
+.env
+/env
+env/
+/env/

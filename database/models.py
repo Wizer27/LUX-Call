@@ -8,5 +8,6 @@ user_data_table = Table(
     "lux_call_user_data",
     metadata_obj,
     Column("username",String,primary_key=True),
-    Column("hash_psw",String)
+    Column("hash_psw",String),
+    Column("avatar",String)
 )

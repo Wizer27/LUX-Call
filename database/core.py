@@ -40,4 +40,16 @@ def get_all_data():
             return res.fetchall()
         except Exception as e:
             return Exception(f"Error : {e}")   
-       
+def login(username:str,hash_psw:str) -> bool:
+    if not is_user_exists(username):
+        return False
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(user_data_table.c.hash_psw).where(user_data_table.c.username == username)
+            res = conn.execute(stmt)
+            data = res.fetchone()
+            if data is not None:
+                return data[0] == hash_psw
+        except Exception as e:
+            return Exception(f"Error : {e}")
+   

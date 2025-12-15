@@ -64,3 +64,14 @@ def get_user_avatar(username:str):
             return data[0]
         except Exception as e:
             return Exception(f"Error : {e}")
+def write_user_avatar(username:str,avatar_64:str) -> bool:
+    if not is_user_exists(username):
+        return False
+    with sync_engine.connect() as conn:
+        try:
+            stmt = user_data_table.update().where(user_data_table.c.username).values(avatar = avatar_64)
+            conn.execute(stmt)
+            conn.commmit()
+        except Exception as e:
+            return Exception(f"Error : {e}")   
+             

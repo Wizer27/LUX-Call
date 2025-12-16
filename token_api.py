@@ -453,7 +453,7 @@ class WriteMessage(BaseModel):
     username:str
     chat_id:str
     message:str
-    files:List[str]
+    files:Optional[List[str]]
 @app.post("/write/message")
 async def write_message(request:WriteMessage,x_authorization:str = Header(...),x_signature:str = Header(...),x_timestamp:str = Header(...)):
     if not check_autorizations(x_authorization):

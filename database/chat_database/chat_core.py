@@ -2,6 +2,7 @@ from sqlalchemy import text,select
 from chat_models import chat_data_table,metadata_obj
 from chat_sqli import sync_engine
 import uuid
+from typing import List,Optional
 
 
 
@@ -47,7 +48,37 @@ def clear_the_chat(id_:str):
             conn.execute(stmt)
             conn.commit()
         except Exception as e:
-            return Exception(f"Error : {e}")        
+            return Exception(f"Error : {e}")  
+def delete_the_chat(id_:str):
+    with sync_engine.connect() as conn:
+        try:
+            stmt = chat_data_table.update().where(chat_data_table.c.id == id_).values(
+                users = [],
+                messages = []
+            )
+            conn.execute(stmt)
+            conn.commit()
+        except Exception as e:
+            return Exception(f"Error : {e}")  
+def send_messages(chat_id:str,username:str,message:str,files:Optional[List[str]]):
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(chat_data_table.c.messages).where(chat_data_table.c.id == chat_id)
+            res = conn.execute(stmt)
+            data = res.fetchone()
+            if data is not None:
+                new_messages = data[0]
+                new_messages.append({
+                    "username":username,
+                    "id":str(uuid.uuid4()),
+                    "message":message,
+                    "files":files
+                })
+                update_stmt = chat_data_table.update().where(chat_data_table.c.id == chat_id).values(messages = new_messages)
+                conn.execute(update_stmt)
+                conn.commit()
+        except Exception as e:
+            return Exception(f"Error : {e}")                 
 def get_all_data():
     with sync_engine.connect() as conn:
         try:
@@ -56,3 +87,4 @@ def get_all_data():
             return res.fetchall()
         except Exception as e:
             return Exception(f"Error : {e}")
+print(send_messages("dd8e4d94-769a-4924-a1ad-c5c038e724bb","user1","test",[]))        

@@ -27,11 +27,27 @@ def create_chat(user1:str,user2:str):
         try:
             stmt = select(chat_data_table.c.id).where(chat_data_table.c.users == [])
             res = conn.execute(stmt)
-            data = res.fetchall()
-            print(data)
-
+            data = res.fetchone()
+            if data is not None:
+                id_ = data[0]
+                update_stmt = chat_data_table.update().where(chat_data_table.c.id == id_).values(
+                    players = [user1,user2]
+                )
+                conn.execute(update_stmt)
+                conn.commit()
+                return id_
+            else:
+                return "Chat not found"
         except Exception as e:
             return Exception(f"Error : {e}")
+def clear_the_chat(id_:str):
+    with sync_engine.connect() as conn:
+        try:
+            stmt = chat_data_table.update().where(chat_data_table.c.id == id_).values(messages = [])
+            conn.execute(stmt)
+            conn.commit()
+        except Exception as e:
+            return Exception(f"Error : {e}")        
 def get_all_data():
     with sync_engine.connect() as conn:
         try:

@@ -29,8 +29,14 @@ def create_chat(user1:str,user2:str):
             res = conn.execute(stmt)
             data = res.fetchall()
             print(data)
-            
+
         except Exception as e:
             return Exception(f"Error : {e}")
-
-
+def get_all_data():
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(chat_data_table)
+            res = conn.execute(stmt)
+            return res.fetchall()
+        except Exception as e:
+            return Exception(f"Error : {e}")

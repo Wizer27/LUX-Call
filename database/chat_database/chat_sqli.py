@@ -1,6 +1,6 @@
 from sqlalchemy import URL,text,create_engine
 from chat_config import connect
-from chat_models import metadata_obj,user_data_table
+from chat_models import metadata_obj,chat_data_table
 
 
 

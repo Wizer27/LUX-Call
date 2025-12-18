@@ -1,6 +1,7 @@
-from sqlalchemy import text,select
+from sqlalchemy import text,select,or_
 from models import user_data_table,metadata_obj
 from sql_i import sync_engine
+from typing import List
 
 
 def create_table():
@@ -73,5 +74,16 @@ def write_user_avatar(username:str,avatar_64:str) -> bool:
             conn.execute(stmt)
             conn.commmit()
         except Exception as e:
-            return Exception(f"Error : {e}")   
+            return Exception(f"Error : {e}")
+def search_users(search:str) -> List[str]:
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(user_data_table.c.username).where(or_(
+                user_data_table.c.username == search.lower(),
+                user_data_table.c.username.ilike(f"%{search}%")
+                ))
+            res = conn.excute(stmt)
+            return res.fetchall()
+        except Exception as e:
+            return Exception(f"Error : {e}")            
              

@@ -78,7 +78,26 @@ def send_messages(chat_id:str,username:str,message:str,files:Optional[List[str]]
                 conn.execute(update_stmt)
                 conn.commit()
         except Exception as e:
-            return Exception(f"Error : {e}")                 
+            return Exception(f"Error : {e}")  
+def delete_the_message(chat_id:str,message_id:str):
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(chat_data_table.c.messages).where(chat_data_table.c.id == chat_id)
+            res = conn.execute(stmt)
+            data = res.fetchone()
+            if data is not None:
+                messages = data[0]
+                for message in messages:
+                    if message["id"] == message_id:
+                        ind = messages.index(message)
+                        messages.pop(ind)
+                        update_stmt = chat_data_table.c.update().where(chat_data_table.c.id ==  chat_id).values(
+                            messages = messages
+                        )
+                        conn.execute(update_stmt)
+                        conn.commit()
+        except Exception as e:
+            return Exception(f"Error : {e}")                
 def get_all_data():
     with sync_engine.connect() as conn:
         try:

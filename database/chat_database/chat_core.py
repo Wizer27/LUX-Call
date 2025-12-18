@@ -1,4 +1,4 @@
-from sqlalchemy import text,select
+from sqlalchemy import text,select,or_,any_
 from chat_models import chat_data_table,metadata_obj
 from chat_sqli import sync_engine
 import uuid
@@ -97,7 +97,55 @@ def delete_the_message(chat_id:str,message_id:str):
                         conn.execute(update_stmt)
                         conn.commit()
         except Exception as e:
-            return Exception(f"Error : {e}")                
+            return Exception(f"Error : {e}") 
+def get_chat_messages(chat_id:str):
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(chat_data_table.c.messages).where(chat_data_table.c.id == chat_id)
+            res = conn.execute(stmt)
+            data = res.fetchone()
+            if data is not None:
+                return data[0]
+        except Exception as e:
+            return Exception(f"Error : {e}")  
+def user_have_chat(username1:str,username2:str):
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(chat_data_table.c.id).where(or_(
+                chat_data_table.c.users == [username1,username2],
+                chat_data_table.c.users == [username2,username1]
+            ))
+            res = conn.execute(stmt)
+            data = res.fetchall()
+            if data is not None:
+                return len(data[0]) > 0
+        except Exception as e:
+            return Exception(f"Error : {e}")   
+def leave_chat(chat_id:str,username:str):
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(chat_data_table.c.users).where(chat_data_table.c.id == chat_id)
+            res = conn.execute(stmt)
+            data = res.fetchone()
+            if data is not None:
+                chats_ = data[0]
+                ind = chats_.index(username)
+                chats_.pop(ind)
+                update_stmt = chat_data_table.update().where(chat_data_table.id == chat_id).values(
+                    users = chats_
+                )
+                conn.execute(update_stmt)
+                conn.commit()
+        except Exception as e:
+            return Exception(f"Error : {e}")   
+def get_user_chats(username:str) -> List:
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(chat_data_table).where(username == any_(chat_data_table.c.users))
+            res = conn.execute(stmt)
+            return res.fetchall()
+        except Exception as e:
+            return Exception(f"Error : {e}")                               
 def get_all_data():
     with sync_engine.connect() as conn:
         try:

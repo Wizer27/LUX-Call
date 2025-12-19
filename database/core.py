@@ -85,5 +85,6 @@ def search_users(search:str) -> List[str]:
             res = conn.excute(stmt)
             return res.fetchall()
         except Exception as e:
-            return Exception(f"Error : {e}")            
+            return Exception(f"Error : {e}")  
+                  
              

@@ -18,3 +18,4 @@ env
 env/
 /env/
 database/chat_database/.env
+database/calls_database/.env

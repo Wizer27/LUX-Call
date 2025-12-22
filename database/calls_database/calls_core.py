@@ -29,4 +29,12 @@ def write_new_call(username:str,to_user:str,call_type:str,time:int):
             conn.execute(stmt)
             conn.commit()
         except Exception as e:
-            return Exception(f"Call error {e}")     
+            return Exception(f"Call error {e}")
+def get_user_calls(username:str):
+    with sync_engine.connect() as conn:
+        try:
+            stmt = select(calls_table).where(calls_table.c.username == username)
+            res = conn.execute(stmt)
+            return res.fetchall()
+        except Exception as e:
+            return Exception(f"Error : {e}")             
